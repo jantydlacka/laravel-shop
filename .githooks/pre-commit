@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -eu
+hooks="$(dirname "$0")"
+
+"$hooks/check-forbidden-words"
+
+if ./vendor/bin/sail ps --status running --services 2>/dev/null | grep -qx laravel.test; then
+	./vendor/bin/sail composer lint
+else
+	echo "WARNING: Sail is not running – Pint check skipped" >&2
+fi

@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Rejects internal traces in staged changes or in a commit message.
+# Usage: check-forbidden-words            (checks lines added in the index)
+#        check-forbidden-words --message FILE
+# Patterns: extended regular expressions, one per line, case-insensitive; empty and # lines skipped.
+set -eu
+
+root="$(git rev-parse --show-toplevel)"
+list="$root/_local/forbidden-words.txt"
+
+if [ ! -f "$list" ]; then
+	echo "WARNING: forbidden word list missing – check NOT run" >&2
+	exit 0
+fi
+
+patterns="$(grep -v -e '^[[:space:]]*$' -e '^[[:space:]]*#' "$list" || true)"
+[ -z "$patterns" ] && exit 0
+
+if [ "${1:-}" = "--message" ]; then
+	text="$(grep -v '^#' "$2" || true)"
+else
+	text="$(git diff --cached -U0 --no-color | grep -E '^\+' | grep -vE '^\+\+\+ ' || true)"
+fi
+
+hits="$(printf '%s\n' "$text" | grep -n -i -E -f <(printf '%s\n' "$patterns") || true)"
+if [ -n "$hits" ]; then
+	echo "ERROR: forbidden words found:" >&2
+	printf '%s\n' "$hits" >&2
+	exit 1
+fi
