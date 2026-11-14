@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * Amounts are integer hellers including VAT, frozen at the time of purchase.
+ *
+ * @property OrderStatus $status
  */
 #[Fillable(['number', 'status', 'customer_name', 'email', 'phone', 'street', 'city', 'zip', 'note', 'vat_rate', 'total', 'vat_total'])]
 class Order extends Model

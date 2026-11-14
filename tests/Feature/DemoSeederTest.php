@@ -1,8 +1,13 @@
 <?php
 
+use App\Enums\OrderStatus;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\User;
+use Database\Seeders\DemoCatalogSeeder;
+use Database\Seeders\DemoOrderSeeder;
 
 it('seeds a browsable demo catalog and the admin user', function () {
     $this->seed();
@@ -16,11 +21,11 @@ it('seeds a browsable demo catalog and the admin user', function () {
 
 it('can be run twice', function () {
     $this->seed();
-    $counts = [Category::count(), Product::count(), User::count()];
+    $counts = [Category::count(), Product::count(), User::count(), Order::count()];
 
     $this->seed();
 
-    expect([Category::count(), Product::count(), User::count()])->toBe($counts);
+    expect([Category::count(), Product::count(), User::count(), Order::count()])->toBe($counts);
 });
 
 it('points every product image at a file shipped in the repository', function () {
@@ -31,5 +36,26 @@ it('points every product image at a file shipped in the repository', function ()
     Product::all()->each(function (Product $product) {
         expect($product->image_path)->toStartWith('images/demo/')
             ->and(public_path($product->image_path))->toBeFile();
+    });
+});
+
+it('seeds orders in every status and takes their goods off the stock', function () {
+    $this->seed(DemoCatalogSeeder::class);
+    $stockBefore = Product::pluck('stock', 'id');
+
+    $this->seed(DemoOrderSeeder::class);
+
+    expect(Order::count())->toBeGreaterThanOrEqual(5)->toBeLessThanOrEqual(8)
+        ->and(Order::pluck('status')->unique()->sortBy->value->values()->all())
+        ->toEqualCanonicalizing(OrderStatus::cases());
+
+    $held = OrderItem::query()
+        ->whereHas('order', fn ($query) => $query->where('status', '!=', OrderStatus::Cancelled))
+        ->get()
+        ->groupBy('product_id')
+        ->map->sum('quantity');
+
+    Product::all()->each(function (Product $product) use ($stockBefore, $held) {
+        expect($product->stock)->toBe($stockBefore[$product->id] - ($held[$product->id] ?? 0));
     });
 });
