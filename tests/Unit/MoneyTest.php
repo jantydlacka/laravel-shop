@@ -22,3 +22,25 @@ it('formats zero', function () {
 it('keeps a leading zero in hellers', function () {
     expect(plain(Money::format(1005)))->toBe('10,05 Kč');
 });
+
+it('parses a crown amount into hellers without floats', function (string $input, int $hellers) {
+    expect(Money::parseCrowns($input))->toBe($hellers);
+})->with([
+    ['1299,50', 129950],
+    ['1299.5', 129950],
+    ['1299', 129900],
+    ['0,01', 1],
+    [' 15,9 ', 1590],
+]);
+
+it('rejects malformed crown amounts', function (string $input) {
+    Money::parseCrowns($input);
+})->with(['-1', 'abc', '12,345', '', '1 299'])->throws(InvalidArgumentException::class);
+
+it('renders hellers as an editable crown amount', function (int $hellers, string $crowns) {
+    expect(Money::toCrowns($hellers))->toBe($crowns);
+})->with([
+    [129950, '1299,50'],
+    [129900, '1299'],
+    [1, '0,01'],
+]);
