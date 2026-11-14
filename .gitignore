@@ -31,4 +31,5 @@ Thumbs.db
 /_local/
 /.superpowers/
 
-/.playwright
+/.playwright/*
+!/.playwright/.gitkeep

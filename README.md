@@ -83,14 +83,15 @@ cp .env.example .env
 docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/app -w /app composer:2.10 \
     composer install --ignore-platform-reqs
 
-./vendor/bin/sail up -d
+./vendor/bin/sail up -d --wait
 ./vendor/bin/sail artisan key:generate
 ./vendor/bin/sail artisan migrate --seed
 ./vendor/bin/sail npm ci
 ./vendor/bin/sail npm run build
 ```
 
-If `migrate` reports that it cannot connect, MySQL is still starting – run it again.
+`--wait` matters on the first start: MySQL initialises its empty volume before it accepts
+connections, and `migrate` would fail without it.
 
 - Shop: <http://localhost:8088>
 - Admin: <http://localhost:8088/admin> – `admin@example.com` / `password`
