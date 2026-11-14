@@ -17,10 +17,10 @@ class OrderInfolist
         $money = fn (int $state): string => Money::format($state);
 
         return $schema
-            ->columns(2)
+            ->columns(1)
             ->components([
                 Section::make('Objednávka')
-                    ->columns(2)
+                    ->columns(['sm' => 2, 'lg' => 4])
                     ->schema([
                         TextEntry::make('number')->label('Číslo'),
                         TextEntry::make('status')->label('Stav')->badge(),
@@ -28,7 +28,7 @@ class OrderInfolist
                         TextEntry::make('note')->label('Poznámka')->placeholder('–'),
                     ]),
                 Section::make('Zákazník')
-                    ->columns(2)
+                    ->columns(['sm' => 2, 'lg' => 4])
                     ->schema([
                         TextEntry::make('customer_name')->label('Jméno'),
                         TextEntry::make('email')->label('E-mail'),
@@ -38,7 +38,6 @@ class OrderInfolist
                             ->state(fn (Order $record): string => "{$record->street}, {$record->zip} {$record->city}"),
                     ]),
                 Section::make('Položky')
-                    ->columnSpanFull()
                     ->schema([
                         RepeatableEntry::make('items')
                             ->label('Položky')
@@ -57,7 +56,6 @@ class OrderInfolist
                             ]),
                     ]),
                 Section::make('Souhrn')
-                    ->columnSpanFull()
                     ->columns(3)
                     ->schema([
                         TextEntry::make('without_vat')

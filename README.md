@@ -1,58 +1,128 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Shop
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A small coffee & tea shop built with Laravel 13, Livewire 4 and Filament 5. Guests browse a
+catalogue, fill a session cart and place an order without registering; the shop owner manages
+the catalogue and moves orders through their states in an admin panel. It is a portfolio
+project: the scope is deliberately small, the e-commerce details are not – money in integer
+hellers, VAT from the order total, price snapshots, a stock lock measured under real
+concurrency, and order states guarded in one place.
 
-## About Laravel
+The storefront and the admin are in Czech; code, comments and docs are in English.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+![Storefront](docs/images/home.png)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+| Checkout | Admin – orders | Admin – order detail |
+|---|---|---|
+| ![Checkout](docs/images/checkout.png) | ![Orders](docs/images/admin-orders.png) | ![Order detail](docs/images/admin-order.png) |
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## Features
 
-## Learning Laravel
+- **Catalogue** – categories, product listing and detail; sold-out products stay visible, unavailable ones return 404.
+- **Session cart** (Livewire) – add, change quantity, remove; quantities are validated against stock and a per-line limit.
+- **Guest checkout** – name, e-mail, phone, address, note; free delivery, no payment.
+- **Order confirmation** – a signed URL, so order numbers cannot be enumerated to read other people's addresses.
+- **Confirmation e-mail** – a queued Mailable, dispatched only after the order transaction commits.
+- **Admin** (Filament, `/admin`) – categories and products (CRUD), orders (list with status filter, detail with VAT breakdown, status changes as actions – orders are never edited freely).
+- **Demo data** – 3 categories, 12 products with bundled images and 6 orders in every state, all placed through the real checkout so stock adds up.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## Domain decisions
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Money is an integer number of hellers** (1 Kč = 100 hellers) everywhere – database, PHP, tests.
+Prices are entered with VAT; the admin form takes crowns (`1299,50`) and converts the string
+without ever going through a float.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+**VAT is computed from the order total**, not per line, with a single shop-wide rate (21 %, in
+`config/shop.php`): `vat = total × rate / (100 + rate)`, rounded half up to whole hellers, in
+integer arithmetic. The rate is stored on the order, so changing it never changes old orders.
 
-## Agentic Development
+**Orders keep a snapshot** – each item stores the product name, unit price and line total at
+the time of purchase. Renaming, repricing or deleting a product does not change past orders.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+**The cart can go stale.** The cart remembers the price the customer saw. If the price,
+availability or stock changes before the order is submitted, no order is created: the cart is
+refreshed to current values and the customer sees exactly what changed before submitting again.
 
-```bash
-composer require laravel/boost --dev
+**Stock is taken under a row lock.** Checkout locks the products (`lockForUpdate`, always in id
+order, so overlapping carts cannot deadlock) and checks stock inside the transaction. Verified
+with `composer race`: ten processes buy the last piece at the same moment → exactly one order,
+stock 0, and nine customers get the "cart changed" message. Without the lock the unsigned
+`stock` column still prevents overselling, but the nine losers get a database error instead
+of a clear message – the lock is what turns a collision into a clean refusal.
 
-php artisan boost:install
+**Order states** are an enum with an explicit transition matrix; `TransitionOrder` is the only
+place that changes a status. It re-reads the order under a lock, so two admins cancelling the
+same order at once cannot return the stock twice. Cancelling returns the goods to stock.
+
+```mermaid
+stateDiagram-v2
+    [*] --> new
+    new --> processing
+    new --> cancelled
+    processing --> shipped
+    processing --> cancelled
+    shipped --> completed
+    completed --> [*]
+    cancelled --> [*]
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+Order numbers are readable (`2026000123` = year + sequence).
 
-## Contributing
+## Tech stack
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Laravel 13 · PHP 8.4 · MySQL 8 · Livewire 4 · Filament 5 · Tailwind CSS 4 + Vite ·
+Laravel Sail (Docker) · Mailpit · Pest 4 (+ browser and mutation plugins) · Larastan (level 6) · Pint
 
-## Code of Conduct
+## Quick start
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Requires Docker. Nothing else is needed on the host – Composer runs in a container.
 
-## Security Vulnerabilities
+```bash
+git clone <repository-url> laravel-shop && cd laravel-shop
+cp .env.example .env
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/app -w /app composer:2.10 \
+    composer install --ignore-platform-reqs
+
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan migrate --seed
+./vendor/bin/sail npm ci
+./vendor/bin/sail npm run build
+```
+
+If `migrate` reports that it cannot connect, MySQL is still starting – run it again.
+
+- Shop: <http://localhost:8088>
+- Admin: <http://localhost:8088/admin> – `admin@example.com` / `password`
+- Mailpit (sent e-mails): <http://localhost:8025> – confirmation e-mails are queued; run
+  `./vendor/bin/sail artisan queue:work` to send them.
+
+Ports are set in `.env` (`APP_PORT`, `FORWARD_DB_PORT`, …) if the defaults are taken.
+
+## Quality checks
+
+All commands run inside Sail (`./vendor/bin/sail composer <script>`):
+
+| Script | What it does |
+|---|---|
+| `qa` | Pint (`--test`), Larastan, the Pest unit + feature suite in parallel |
+| `race` | the stock race: 10 processes buy the last piece at once on a separate `shop_race` database; fails unless exactly one order is created (`scripts/race-check.sh 20` for more processes) |
+| `mutate` | mutation testing of the checkout and order domain (`Cart`, `PlaceOrder`, `TransitionOrder`, `Vat`), minimum score 80 % |
+| `test:browser` | Playwright tests of the purchase path and the admin status change (needs the built assets) |
+
+The browser tests need Chromium once: `./vendor/bin/sail npx playwright install chromium --only-shell`.
+It is stored in `./.playwright` (set `PLAYWRIGHT_BROWSERS_DIR` in `.env` to reuse an existing
+Playwright cache).
+
+## Out of scope
+
+Product variants, discounts and coupons, payments, search, customer accounts, multiple
+currencies, languages or VAT rates, priced shipping methods, invoices.
+
+Known limitation: a second submit of the same checkout is handled (the cart is empty, the
+customer is sent back with a message), but two truly simultaneous requests from one session
+are not deduplicated by an idempotency key.
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+[MIT](LICENSE)
