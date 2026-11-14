@@ -6,9 +6,11 @@ use Database\Factories\ProductFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Prices are integer hellers including VAT.
@@ -35,6 +37,20 @@ class Product extends Model
     public function isInStock(): bool
     {
         return $this->stock > 0;
+    }
+
+    /**
+     * Demo images ship in public/images/demo, uploaded ones live on the public disk.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function imageUrl(): Attribute
+    {
+        return Attribute::get(fn (): ?string => match (true) {
+            $this->image_path === null => null,
+            str_starts_with($this->image_path, 'images/') => asset($this->image_path),
+            default => Storage::disk('public')->url($this->image_path),
+        });
     }
 
     /**
