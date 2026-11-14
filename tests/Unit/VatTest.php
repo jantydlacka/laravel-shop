@@ -2,6 +2,8 @@
 
 use App\Support\Vat;
 
+covers(Vat::class);
+
 it('extracts VAT from a gross amount, rounded half-up to whole hellers', function (int $gross, int $vat) {
     expect(Vat::fromGross($gross, 21))->toBe($vat);
 })->with([

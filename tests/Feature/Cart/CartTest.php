@@ -3,6 +3,9 @@
 use App\Cart\Cart;
 use App\Cart\CartLine;
 use App\Models\Product;
+use App\Support\Money;
+
+covers(Cart::class, CartLine::class);
 
 function cart(): Cart
 {
@@ -136,6 +139,60 @@ it('refresh reports nothing when nothing changed', function () {
     cart()->add(Product::factory()->create(['stock' => 5]), 1);
 
     expect(cart()->refresh())->toBe([]);
+});
+
+it('refresh states the old and the new price', function () {
+    $product = Product::factory()->create(['name' => 'Moka konvička', 'price' => 10000, 'stock' => 10]);
+    cart()->add($product, 1);
+    $product->update(['price' => 12000]);
+
+    expect(cart()->refresh())->toBe([
+        'Moka konvička: cena se změnila z '.Money::format(10000).' na '.Money::format(12000).'.',
+    ]);
+});
+
+it('refresh keeps checking the lines after a dropped one', function (Closure $drop) {
+    $dropped = Product::factory()->create(['name' => 'Matcha', 'stock' => 5]);
+    $repriced = Product::factory()->create(['name' => 'Moka konvička', 'price' => 10000, 'stock' => 5]);
+    cart()->add($dropped, 1);
+    cart()->add($repriced, 1);
+    $drop($dropped);
+    $repriced->update(['price' => 12000]);
+
+    $messages = cart()->refresh();
+
+    expect($messages)->toHaveCount(2)
+        ->and($messages[1])->toContain('Moka konvička')
+        ->and(cart()->total())->toBe(12000);
+})->with([
+    'unavailable' => [fn (Product $product) => $product->update(['is_available' => false])],
+    'sold out' => [fn (Product $product) => $product->update(['stock' => 0])],
+    'deleted' => [fn (Product $product) => $product->delete()],
+]);
+
+it('refresh leaves a quantity equal to the stock alone', function () {
+    $product = Product::factory()->create(['stock' => 3]);
+    cart()->add($product, 3);
+
+    expect(cart()->refresh())->toBe([])
+        ->and(cart()->quantityOf($product->id))->toBe(3);
+});
+
+it('reports zero quantity for a product not in the cart', function () {
+    expect(cart()->quantityOf(Product::factory()->create()->id))->toBe(0);
+});
+
+it('caps the orderable quantity by stock and by the shop limit', function () {
+    config(['shop.max_quantity' => 99]);
+
+    expect(Cart::maxQuantityFor(Product::factory()->make(['stock' => 5])))->toBe(5)
+        ->and(Cart::maxQuantityFor(Product::factory()->make(['stock' => 500])))->toBe(99);
+});
+
+it('multiplies the seen price by the quantity for a line total', function () {
+    $line = new CartLine(Product::factory()->make(), 3, 12550);
+
+    expect($line->lineTotal())->toBe(37650);
 });
 
 it('persists in the session between instances', function () {

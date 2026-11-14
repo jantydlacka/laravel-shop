@@ -2,6 +2,8 @@
 
 use App\Enums\OrderStatus;
 
+covers(OrderStatus::class);
+
 $allowed = [
     'new' => ['processing', 'cancelled'],
     'processing' => ['shipped', 'cancelled'],

@@ -11,6 +11,8 @@ use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Support\Facades\Mail;
 
+covers(PlaceOrder::class);
+
 beforeEach(function () {
     Mail::fake();
 });
