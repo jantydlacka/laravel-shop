@@ -30,3 +30,5 @@ Homestead.yaml
 Thumbs.db
 /_local/
 /.superpowers/
+
+/.playwright
