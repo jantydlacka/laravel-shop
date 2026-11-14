@@ -12,6 +12,8 @@ it('buys a product as a guest', function () {
 
     $page->click('Moka konvička')
         ->assertPathIs("/produkt/{$product->slug}")
+        // Livewire writes its own value into wire:model inputs when it boots, over anything typed earlier.
+        ->waitForEvent('load')
         ->fill('quantity', '2')
         ->press('Do košíku')
         ->assertSee('Přidáno do košíku.')
@@ -20,6 +22,7 @@ it('buys a product as a guest', function () {
         ->assertPathIs('/kosik')
         ->click('Pokračovat k objednávce')
         ->assertPathIs('/pokladna')
+        ->waitForEvent('load')
         ->fill('name', 'Jana Nováková')
         ->fill('email', 'jana@example.com')
         ->fill('phone', '777 123 456')
