@@ -37,7 +37,7 @@ class CheckoutPage extends Component
     #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['zip.required' => 'Vyplňte PSČ.', 'zip.regex' => 'PSČ má pět číslic, např. 110 00.'])]
     public string $zip = '';
 
-    #[Validate('nullable|string|max:2000')]
+    #[Validate('nullable|string|max:2000', message: ['note.max' => 'Poznámka může mít nejvýš 2000 znaků.'])]
     public string $note = '';
 
     /** @var list<string> */
@@ -46,6 +46,11 @@ class CheckoutPage extends Component
     public function mount(Cart $cart): mixed
     {
         if ($cart->isEmpty()) {
+            // Back button or reload after an order: the cart is already empty, say why.
+            if (session()->has('checkout.last_order')) {
+                session()->flash('status', 'Objednávka č. '.session('checkout.last_order').' už byla odeslána, košík je prázdný.');
+            }
+
             return $this->redirectRoute('shop.cart');
         }
 
@@ -79,6 +84,7 @@ class CheckoutPage extends Component
             return;
         }
 
+        session()->put('checkout.last_order', $order->number);
         $this->redirect(URL::signedRoute('shop.order.confirmation', $order));
     }
 

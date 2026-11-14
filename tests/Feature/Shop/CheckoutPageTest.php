@@ -37,7 +37,29 @@ function fillCheckout(array $overrides = [])
 }
 
 it('redirects to the cart when the cart is empty', function () {
-    $this->get(route('shop.checkout'))->assertRedirect(route('shop.cart'));
+    $this->get(route('shop.checkout'))
+        ->assertRedirect(route('shop.cart'))
+        ->assertSessionMissing('status');
+});
+
+it('tells the customer the order was already sent when they come back to the checkout', function () {
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+    fillCheckout()->call('submit');
+    $order = Order::sole();
+
+    $this->get(route('shop.checkout'))
+        ->assertRedirect(route('shop.cart'))
+        ->assertSessionHas('status', "Objednávka č. {$order->number} už byla odeslána, košík je prázdný.");
+});
+
+it('rejects a note longer than 2000 characters with a visible message', function () {
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+
+    fillCheckout(['note' => str_repeat('a', 2001)])->call('submit')
+        ->assertHasErrors(['note' => 'Poznámka může mít nejvýš 2000 znaků.'])
+        ->assertSee('Poznámka může mít nejvýš 2000 znaků.');
+
+    expect(Order::count())->toBe(0);
 });
 
 it('shows the order summary', function () {

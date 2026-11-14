@@ -33,6 +33,7 @@
             <div class="sm:col-span-2">
                 <label for="note" class="mb-1 block text-sm font-medium">Poznámka (nepovinné)</label>
                 <textarea id="note" wire:model="note" rows="3" class="w-full rounded-lg border border-stone-300 px-3 py-2"></textarea>
+                @error('note') <p class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
             </div>
 
             <div class="sm:col-span-2">
