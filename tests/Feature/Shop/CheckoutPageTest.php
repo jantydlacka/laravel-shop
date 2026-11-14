@@ -58,18 +58,25 @@ it('places the order and redirects to a signed confirmation', function () {
     $component->assertRedirect(URL::signedRoute('shop.order.confirmation', $order));
 });
 
-it('validates required fields', function (string $field) {
+it('validates required fields with a message of their own', function (string $field, string $message) {
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 
-    fillCheckout([$field => ''])->call('submit')->assertHasErrors($field);
+    fillCheckout([$field => ''])->call('submit')->assertHasErrors([$field => $message]);
 
     expect(Order::count())->toBe(0);
-})->with(['name', 'email', 'phone', 'street', 'city', 'zip']);
+})->with([
+    ['name', 'Vyplňte jméno a příjmení.'],
+    ['email', 'Vyplňte e-mail.'],
+    ['phone', 'Vyplňte telefon.'],
+    ['street', 'Vyplňte ulici a číslo domu.'],
+    ['city', 'Vyplňte město.'],
+    ['zip', 'Vyplňte PSČ.'],
+]);
 
 it('validates the e-mail format', function () {
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 
-    fillCheckout(['email' => 'jana-at-example'])->call('submit')->assertHasErrors('email');
+    fillCheckout(['email' => 'jana-at-example'])->call('submit')->assertHasErrors(['email' => 'Zadejte platný e-mail.']);
 });
 
 it('accepts Czech zip codes with or without a space', function (string $zip, bool $valid) {

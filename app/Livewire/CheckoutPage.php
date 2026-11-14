@@ -18,22 +18,23 @@ use Livewire\Component;
 #[Title('Pokladna')]
 class CheckoutPage extends Component
 {
-    #[Validate('required|string|max:255', message: ['required' => 'Vyplňte jméno a příjmení.'])]
+    // Message keys carry the field name: Livewire merges them into one list for the whole component.
+    #[Validate('required|string|max:255', message: ['name.required' => 'Vyplňte jméno a příjmení.'])]
     public string $name = '';
 
-    #[Validate('required|email|max:255', message: ['required' => 'Vyplňte e-mail.', 'email' => 'Zadejte platný e-mail.'])]
+    #[Validate('required|email|max:255', message: ['email.required' => 'Vyplňte e-mail.', 'email.email' => 'Zadejte platný e-mail.'])]
     public string $email = '';
 
-    #[Validate('required|string|max:30', message: ['required' => 'Vyplňte telefon.'])]
+    #[Validate('required|string|max:30', message: ['phone.required' => 'Vyplňte telefon.'])]
     public string $phone = '';
 
-    #[Validate('required|string|max:255', message: ['required' => 'Vyplňte ulici a číslo domu.'])]
+    #[Validate('required|string|max:255', message: ['street.required' => 'Vyplňte ulici a číslo domu.'])]
     public string $street = '';
 
-    #[Validate('required|string|max:255', message: ['required' => 'Vyplňte město.'])]
+    #[Validate('required|string|max:255', message: ['city.required' => 'Vyplňte město.'])]
     public string $city = '';
 
-    #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['required' => 'Vyplňte PSČ.', 'regex' => 'PSČ má pět číslic, např. 110 00.'])]
+    #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['zip.required' => 'Vyplňte PSČ.', 'zip.regex' => 'PSČ má pět číslic, např. 110 00.'])]
     public string $zip = '';
 
     #[Validate('nullable|string|max:2000')]
