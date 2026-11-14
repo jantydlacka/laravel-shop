@@ -11,9 +11,7 @@
     <header class="border-b border-stone-200 bg-white">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
             <a href="{{ route('shop.home') }}" class="text-xl font-semibold tracking-tight">{{ config('app.name') }}</a>
-            <a href="#" class="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white">
-                Košík (<span>0</span>)
-            </a>
+            <livewire:cart-counter />
         </div>
     </header>
 

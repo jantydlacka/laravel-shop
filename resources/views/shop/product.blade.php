@@ -19,7 +19,7 @@
 
             @if ($product->isInStock())
                 <p class="text-sm text-green-700">Skladem {{ $product->stock }} ks</p>
-                <button type="button" class="self-start rounded-full bg-stone-900 px-6 py-3 font-medium text-white">Do košíku</button>
+                <livewire:add-to-cart :product="$product" />
             @else
                 <p class="font-medium text-red-700">Vyprodáno</p>
             @endif
