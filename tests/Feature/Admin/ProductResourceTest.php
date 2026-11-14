@@ -53,6 +53,13 @@ it('rejects an invalid price', function (string $input) {
     expect(Product::count())->toBe(0);
 })->with(['-1', 'abc', '12,345', '']);
 
+it('shows form errors in Czech', function () {
+    livewire(CreateProduct::class)
+        ->call('create')
+        ->assertHasFormErrors(['name' => 'required'])
+        ->assertSee('Pole název je povinné.');
+});
+
 it('shows the stored price in crowns when editing', function () {
     $product = Product::factory()->create(['price' => 129950]);
 
