@@ -1,6 +1,10 @@
 <div>
     <h1 class="mb-6 text-2xl font-semibold">Košík</h1>
 
+    @if (session('status'))
+        <div class="mb-6 rounded-lg border border-stone-300 bg-white p-4 text-sm" role="status">{{ session('status') }}</div>
+    @endif
+
     @if ($notices)
         <div class="mb-6 rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">
             <p class="mb-1 font-medium">Od vložení do košíku se něco změnilo:</p>
@@ -38,6 +42,7 @@
 
         <div class="mt-6 flex items-center justify-between">
             <p class="text-lg">Celkem s DPH: <strong>{{ \App\Support\Money::format($total) }}</strong></p>
+            <a href="{{ route('shop.checkout') }}" class="rounded-full bg-stone-900 px-6 py-3 font-medium text-white">Pokračovat k objednávce</a>
         </div>
     @endif
 </div>

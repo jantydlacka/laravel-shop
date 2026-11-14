@@ -148,9 +148,11 @@ class Cart
     }
 
     /**
+     * Raw cart content: product id => quantity and the unit price the customer saw.
+     *
      * @return array<int, array{quantity: int, price: int}>
      */
-    private function items(): array
+    public function items(): array
     {
         return $this->session->get(self::SESSION_KEY, []);
     }
