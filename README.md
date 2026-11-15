@@ -46,7 +46,7 @@ example after a change in another tab.
 
 **One cart, one order.** The cart carries a token that the order stores under a unique index, so
 a double click or two parallel requests from the same session create a single order; the second
-request rolls back and the customer is told the order was already sent. Orders from one IP
+request rolls back without touching the stock. Orders from one IP
 address are limited to 10 an hour (`config/shop.php`). Behind a reverse proxy, configure trusted
 proxies, otherwise every customer shares the proxy's address and the limit applies to the whole shop.
 
