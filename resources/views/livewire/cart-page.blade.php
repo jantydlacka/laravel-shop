@@ -23,7 +23,7 @@
         <div class="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
             @foreach ($lines as $line)
                 <div class="flex flex-wrap items-center gap-4 p-4" wire:key="line-{{ $line->product->id }}">
-                    <a href="{{ route('shop.product', $line->product) }}" class="flex-1 font-medium hover:underline">{{ $line->product->name }}</a>
+                    <a href="{{ route('shop.product', $line->product) }}" class="w-full font-medium hover:underline sm:w-auto sm:flex-1">{{ $line->product->name }}</a>
                     <span class="text-sm text-stone-500">{{ \App\Support\Money::format($line->price) }} / ks</span>
                     <div>
                         <label for="qty-{{ $line->product->id }}" class="sr-only">Množství</label>
@@ -31,7 +31,7 @@
                                wire:model.live.debounce.500ms="quantities.{{ $line->product->id }}"
                                class="w-20 rounded-lg border border-stone-300 px-3 py-2 text-center">
                     </div>
-                    <span class="w-28 text-right font-semibold">{{ \App\Support\Money::format($line->lineTotal()) }}</span>
+                    <span class="ml-auto w-28 text-right font-semibold sm:ml-0">{{ \App\Support\Money::format($line->lineTotal()) }}</span>
                     <button type="button" wire:click="remove({{ $line->product->id }})" class="text-sm text-red-700 hover:underline">Odebrat</button>
                     @error('quantities.'.$line->product->id)
                         <p class="w-full text-sm text-red-700">{{ $message }}</p>
@@ -40,9 +40,9 @@
             @endforeach
         </div>
 
-        <div class="mt-6 flex items-center justify-between">
+        <div class="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-lg">Celkem s DPH: <strong>{{ \App\Support\Money::format($total) }}</strong></p>
-            <a href="{{ route('shop.checkout') }}" class="rounded-full bg-stone-900 px-6 py-3 font-medium text-white">Pokračovat k objednávce</a>
+            <a href="{{ route('shop.checkout') }}" class="rounded-full bg-stone-900 px-6 py-3 text-center font-medium text-white">Pokračovat k objednávce</a>
         </div>
     @endif
 </div>
