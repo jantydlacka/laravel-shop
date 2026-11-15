@@ -10,6 +10,7 @@ use App\Exceptions\OrderAlreadyPlacedException;
 use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
+use Carbon\CarbonImmutable;
 use Illuminate\Session\ArraySessionHandler;
 use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Mail;
@@ -61,6 +62,13 @@ it('places an order with a snapshot of names and prices', function () {
         ['product_id' => $a->id, 'product_name' => 'Moka konvička', 'unit_price' => 89900, 'quantity' => 2, 'line_total' => 179800],
         ['product_id' => $b->id, 'product_name' => 'Earl Grey', 'unit_price' => 14900, 'quantity' => 1, 'line_total' => 14900],
     ]);
+});
+
+it('numbers an order by the Czech calendar year', function () {
+    $this->travelTo(CarbonImmutable::parse('2026-12-31 23:30', 'UTC'));
+    app(Cart::class)->add(Product::factory()->create(['stock' => 1]), 1);
+
+    expect(placeOrder()->number)->toStartWith('2027');
 });
 
 it('stores order totals beyond the 32-bit range', function () {
