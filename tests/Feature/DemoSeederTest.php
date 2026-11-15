@@ -59,6 +59,14 @@ it('puts every product image on the public disk', function () {
     });
 });
 
+it('gives demo customers phone numbers no one can have', function () {
+    $this->seed(DemoCatalogSeeder::class);
+    $this->seed(DemoOrderSeeder::class);
+
+    // Czech phone numbers do not start with 0.
+    expect(Order::pluck('phone')->all())->each->toMatch('/^000 000 \d{3}$/');
+});
+
 it('seeds orders in every status and takes their goods off the stock', function () {
     $this->seed(DemoCatalogSeeder::class);
     $stockBefore = Product::pluck('stock', 'id');

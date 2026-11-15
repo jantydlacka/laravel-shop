@@ -24,37 +24,37 @@ class DemoOrderSeeder extends Seeder
      */
     private const ORDERS = [
         [
-            'customer' => ['Jana Nováková', 'jana.novakova@example.com', '777 123 456', 'Na Příkopě 12', 'Praha', '110 00'],
+            'customer' => ['Jana Nováková', 'jana.novakova@example.com', '000 000 001', 'Na Příkopě 12', 'Praha', '110 00'],
             'items' => ['espresso-blend' => 1, 'porcelanovy-salek' => 2],
             'path' => [OrderStatus::Processing, OrderStatus::Shipped, OrderStatus::Completed],
             'days_ago' => 9,
         ],
         [
-            'customer' => ['Petr Svoboda', 'petr.svoboda@example.com', '603 555 010', 'Masarykova 5', 'Brno', '602 00'],
+            'customer' => ['Petr Svoboda', 'petr.svoboda@example.com', '000 000 002', 'Masarykova 5', 'Brno', '602 00'],
             'items' => ['moka-konvicka' => 1, 'kolumbie-supremo' => 2],
             'path' => [OrderStatus::Processing, OrderStatus::Shipped],
             'days_ago' => 6,
         ],
         [
-            'customer' => ['Lucie Dvořáková', 'lucie.dvorakova@example.com', '721 300 400', 'Hlavní 88', 'Ostrava', '702 00'],
+            'customer' => ['Lucie Dvořáková', 'lucie.dvorakova@example.com', '000 000 003', 'Hlavní 88', 'Ostrava', '702 00'],
             'items' => ['rucni-mlynek' => 1],
             'path' => [OrderStatus::Cancelled],
             'days_ago' => 5,
         ],
         [
-            'customer' => ['Tomáš Černý', 'tomas.cerny@example.com', '608 222 333', 'Jungmannova 3', 'Plzeň', '301 00'],
+            'customer' => ['Tomáš Černý', 'tomas.cerny@example.com', '000 000 004', 'Jungmannova 3', 'Plzeň', '301 00'],
             'items' => ['sencha-zeleny-caj' => 2, 'earl-grey' => 1, 'rooibos-vanilka' => 1],
             'path' => [OrderStatus::Processing],
             'days_ago' => 2,
         ],
         [
-            'customer' => ['Eva Procházková', 'eva.prochazkova@example.com', '730 111 222', 'Palackého 21', 'Olomouc', '779 00'],
+            'customer' => ['Eva Procházková', 'eva.prochazkova@example.com', '000 000 005', 'Palackého 21', 'Olomouc', '779 00'],
             'items' => ['french-press' => 1, 'espresso-blend' => 1],
             'path' => [],
             'days_ago' => 1,
         ],
         [
-            'customer' => ['Martin Kučera', 'martin.kucera@example.com', '775 444 555', 'Komenského 7', 'Liberec', '460 01'],
+            'customer' => ['Martin Kučera', 'martin.kucera@example.com', '000 000 006', 'Komenského 7', 'Liberec', '460 01'],
             'items' => ['earl-grey' => 3],
             'path' => [],
             'days_ago' => 0,
