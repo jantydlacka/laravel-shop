@@ -115,6 +115,17 @@ it('refresh drops a sold out product', function () {
         ->and(cart()->isEmpty())->toBeTrue();
 });
 
+it('leaves a deleted product out of the total, as it does from the lines', function () {
+    $kept = Product::factory()->create(['price' => 10000]);
+    $deleted = Product::factory()->create(['price' => 5000]);
+    cart()->add($kept, 1);
+    cart()->add($deleted, 1);
+    $deleted->delete();
+
+    expect(cart()->total())->toBe(10000)
+        ->and(cart()->lines()->sum->lineTotal())->toBe(10000);
+});
+
 it('refresh drops a product that no longer exists', function () {
     $product = Product::factory()->create();
     cart()->add($product, 1);

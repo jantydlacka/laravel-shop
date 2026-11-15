@@ -74,7 +74,7 @@ class Cart
 
     public function total(): int
     {
-        return array_sum(array_map(fn (array $item) => $item['quantity'] * $item['price'], $this->items()));
+        return $this->lines()->sum(fn (CartLine $line) => $line->lineTotal());
     }
 
     public function count(): int
