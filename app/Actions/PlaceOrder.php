@@ -45,7 +45,7 @@ class PlaceOrder
 
             throw $placed;
         } catch (UniqueConstraintViolationException) {
-            // The session is not locked: a parallel request with the same cart got there first.
+            // Reached only when two requests share the token but no product, so the product locks did not queue them.
             $cart->clear();
 
             throw new OrderAlreadyPlacedException(Order::query()->where('cart_token', $token)->sole());
