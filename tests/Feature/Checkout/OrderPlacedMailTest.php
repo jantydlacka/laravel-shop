@@ -33,3 +33,14 @@ it('does not turn Markdown typed by the customer into links', function () {
     expect($html)->not->toContain('href="https://attacker.example')
         ->and($html)->toContain('[Zaplaťte zde](https://attacker.example)');
 });
+
+it('keeps a product name with a pipe in one table cell', function () {
+    $order = Order::factory()
+        ->withItem(Product::factory()->create(['name' => 'Káva | extra', 'price' => 12300]), 1)
+        ->create();
+
+    $html = (new OrderPlaced($order->fresh()))->render();
+
+    expect($html)->toMatch('/>Káva \| extra<\/td>/')
+        ->and($html)->toContain(Money::format(12300));
+});

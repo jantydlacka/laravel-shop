@@ -10,7 +10,7 @@ přijali jsme vaši objednávku č. **{{ $order->number }}**. Ozveme se, jakmile
 | Položka | Množství | Cena |
 |:--------|:--------:|-----:|
 @foreach ($order->items as $item)
-| {{ $item->product_name }} | {{ $item->quantity }} ks | {{ Money::format($item->line_total) }} |
+| {{ str_replace('|', '\\|', $item->product_name) }} | {{ $item->quantity }} ks | {{ Money::format($item->line_total) }} |
 @endforeach
 | **Celkem s DPH** | | **{{ Money::format($order->total) }}** |
 </x-mail::table>
