@@ -214,3 +214,38 @@ it('persists in the session between instances', function () {
 
     expect(cart()->quantityOf($product->id))->toBe(2);
 });
+
+it('keeps one token from the first product until the cart is cleared', function () {
+    $product = Product::factory()->create(['stock' => 10]);
+
+    cart()->add($product, 1);
+    $token = session('cart_token');
+    cart()->add($product, 1);
+
+    expect($token)->toBeString()->not->toBeEmpty()
+        ->and(cart()->token())->toBe($token);
+
+    cart()->clear();
+
+    expect(session()->has('cart_token'))->toBeFalse()
+        ->and(cart()->token())->not->toBe($token);
+});
+
+it('fingerprints the content regardless of the order products were added in', function () {
+    $a = Product::factory()->create(['stock' => 10]);
+    $b = Product::factory()->create(['stock' => 10]);
+
+    cart()->add($a, 1);
+    cart()->add($b, 2);
+    $fingerprint = cart()->fingerprint();
+
+    cart()->clear();
+    cart()->add($b, 2);
+    cart()->add($a, 1);
+
+    expect(cart()->fingerprint())->toBe($fingerprint);
+
+    cart()->update($a->id, 3);
+
+    expect(cart()->fingerprint())->not->toBe($fingerprint);
+});
