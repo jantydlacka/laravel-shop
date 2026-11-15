@@ -222,6 +222,21 @@ it('places one order when two requests submit the same cart at once', function (
     Mail::assertQueuedCount(1);
 });
 
+it('tells the second of two parallel requests the order was sent, even for the last piece', function () {
+    $product = Product::factory()->create(['stock' => 1]);
+    $first = new Store('first', new ArraySessionHandler(10));
+    (new Cart($first))->add($product, 1);
+    $second = new Store('second', new ArraySessionHandler(10));
+    $second->replace($first->all());
+
+    $order = app(PlaceOrder::class)->handle(new Cart($first), checkoutData());
+
+    expect(fn () => app(PlaceOrder::class)->handle(new Cart($second), checkoutData()))
+        ->toThrow(fn (OrderAlreadyPlacedException $e) => expect($e->order->is($order))->toBeTrue())
+        ->and((new Cart($second))->isEmpty())->toBeTrue()
+        ->and(Order::count())->toBe(1);
+});
+
 it('refuses a cart that changed since the customer saw the summary', function () {
     $product = Product::factory()->create(['price' => 10000, 'stock' => 10]);
     $cart = app(Cart::class);

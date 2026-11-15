@@ -40,6 +40,10 @@ class PlaceOrder
 
         try {
             $order = $this->create($cart, $data, $token);
+        } catch (OrderAlreadyPlacedException $placed) {
+            $cart->clear();
+
+            throw $placed;
         } catch (UniqueConstraintViolationException) {
             // The session is not locked: a parallel request with the same cart got there first.
             $cart->clear();
@@ -66,6 +70,13 @@ class PlaceOrder
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
+
+            // A parallel request with this cart may have taken the stock before we got the lock.
+            $placed = Order::query()->where('cart_token', $token)->first();
+
+            if ($placed !== null) {
+                throw new OrderAlreadyPlacedException($placed);
+            }
 
             if (! $this->matches($items, $products)) {
                 throw new CartChangedException($cart->refresh());
