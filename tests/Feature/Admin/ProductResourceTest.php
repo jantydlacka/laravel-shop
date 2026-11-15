@@ -123,3 +123,61 @@ it('keeps a seeded image when the product is saved unchanged', function () {
 
     expect($product->refresh()->image_path)->toBe($imagePath)->not->toBeNull();
 });
+
+it('keeps stock sold while the form was open when the admin did not touch the stock', function () {
+    $product = Product::factory()->create(['stock' => 10, 'description' => 'Starý popis']);
+    $form = livewire(EditProduct::class, ['record' => $product->getRouteKey()]);
+    $product->decrement('stock', 3);
+
+    $form->fillForm(['description' => 'Opravený popis'])->call('save')
+        ->assertHasNoFormErrors()
+        ->assertSchemaStateSet(['stock' => 7]);
+
+    expect($product->refresh())->stock->toBe(7)->description->toBe('Opravený popis');
+});
+
+it('refuses a stock change when the stock moved since the form was loaded', function () {
+    $product = Product::factory()->create(['stock' => 10, 'description' => 'Starý popis']);
+    $form = livewire(EditProduct::class, ['record' => $product->getRouteKey()]);
+    $product->decrement('stock', 8);
+
+    $form->fillForm(['stock' => 5, 'description' => 'Opravený popis'])->call('save')
+        ->assertNotified('Sklad se mezitím změnil')
+        ->assertSchemaStateSet(['stock' => 2]);
+
+    expect($product->refresh())->stock->toBe(2)->description->toBe('Starý popis');
+
+    $form->fillForm(['stock' => 5])->call('save')->assertHasNoFormErrors();
+
+    expect($product->refresh()->stock)->toBe(5);
+});
+
+it('saves a stock change when nothing else touched the stock', function () {
+    $product = Product::factory()->create(['stock' => 10]);
+
+    livewire(EditProduct::class, ['record' => $product->getRouteKey()])
+        ->fillForm(['stock' => 12])->call('save')->assertHasNoFormErrors();
+
+    expect($product->refresh()->stock)->toBe(12);
+});
+
+it('does not write the stock back on a second save without reloading', function () {
+    $product = Product::factory()->create(['stock' => 10]);
+    $form = livewire(EditProduct::class, ['record' => $product->getRouteKey()]);
+    $form->fillForm(['stock' => 12])->call('save')->assertHasNoFormErrors();
+    $product->decrement('stock', 2);
+
+    $form->fillForm(['description' => 'Druhá úprava'])->call('save')->assertHasNoFormErrors();
+
+    expect($product->refresh()->stock)->toBe(10);
+});
+
+it('accepts a second stock change after its own save without reloading', function () {
+    $product = Product::factory()->create(['stock' => 10]);
+    $form = livewire(EditProduct::class, ['record' => $product->getRouteKey()]);
+    $form->fillForm(['stock' => 12])->call('save')->assertHasNoFormErrors();
+
+    $form->fillForm(['stock' => 15])->call('save')->assertHasNoFormErrors();
+
+    expect($product->refresh()->stock)->toBe(15);
+});

@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\TransitionOrder;
 use App\Enums\OrderStatus;
+use App\Exceptions\InvalidOrderTransition;
 use App\Filament\Resources\Orders\OrderResource;
 use App\Filament\Resources\Orders\Pages\ListOrders;
 use App\Filament\Resources\Orders\Pages\ViewOrder;
@@ -56,6 +58,30 @@ it('ships an order from the admin', function () {
         ->assertNotified();
 
     expect($order->fresh()->status)->toBe(OrderStatus::Shipped);
+});
+
+it('cancels an order from the admin and returns its goods to stock', function () {
+    $product = Product::factory()->create(['stock' => 3]);
+    $order = Order::factory()->withItem($product, 2)->create(['status' => OrderStatus::New]);
+
+    livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
+        ->callAction('cancelled')
+        ->assertNotified('Objednávka je ve stavu „Zrušená“.');
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Cancelled)
+        ->and($product->fresh()->stock)->toBe(5);
+});
+
+it('tells the admin when someone else changed the order first', function () {
+    $order = Order::factory()->create(['status' => OrderStatus::Processing]);
+    $this->mock(TransitionOrder::class)->shouldReceive('handle')
+        ->andThrow(new InvalidOrderTransition(OrderStatus::Cancelled, OrderStatus::Shipped));
+
+    livewire(ViewOrder::class, ['record' => $order->getRouteKey()])
+        ->callAction('shipped')
+        ->assertNotified('Stav se nezměnil');
+
+    expect($order->fresh()->status)->toBe(OrderStatus::Processing);
 });
 
 it('has no create, edit or delete pages', function () {
