@@ -2,7 +2,9 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Models\Product;
 use App\Support\Money;
+use Closure;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -45,12 +47,19 @@ class ProductForm
                     ->required()
                     ->regex(Money::CROWNS_PATTERN)
                     ->validationMessages(['regex' => 'Zadejte cenu v korunách, např. 1299 nebo 1299,50.'])
+                    ->rule(fn (): Closure => function (string $attribute, mixed $value, Closure $fail): void {
+                        if (is_string($value) && preg_match(Money::CROWNS_PATTERN, trim($value)) === 1
+                            && Money::parseCrowns($value) > Product::MAX_PRICE) {
+                            $fail('Cena může být nejvýš '.Money::format(Product::MAX_PRICE).'.');
+                        }
+                    })
                     ->formatStateUsing(fn (?int $state): ?string => $state === null ? null : Money::toCrowns($state))
                     ->dehydrateStateUsing(fn (string $state): int => Money::parseCrowns($state)),
                 TextInput::make('stock')
                     ->label('Skladem (ks)')
                     ->integer()
                     ->minValue(0)
+                    ->maxValue(Product::MAX_STOCK)
                     ->default(0)
                     ->required(),
                 Toggle::make('is_available')

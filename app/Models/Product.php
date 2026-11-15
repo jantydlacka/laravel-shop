@@ -22,6 +22,11 @@ class Product extends Model
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
+    /** Hellers. With the 99-piece line limit an order line stays within unit_price × 99. */
+    public const MAX_PRICE = 100_000_000;
+
+    public const MAX_STOCK = 100_000;
+
     public function getRouteKeyName(): string
     {
         return 'slug';

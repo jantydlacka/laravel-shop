@@ -21,8 +21,8 @@ return new class extends Migration
             $table->string('zip');
             $table->text('note')->nullable();
             $table->unsignedTinyInteger('vat_rate');
-            $table->unsignedInteger('total');
-            $table->unsignedInteger('vat_total');
+            $table->unsignedBigInteger('total');
+            $table->unsignedBigInteger('vat_total');
             $table->timestamps();
         });
 
@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('product_name');
             $table->unsignedInteger('unit_price');
             $table->unsignedSmallInteger('quantity');
-            $table->unsignedInteger('line_total');
+            $table->unsignedBigInteger('line_total');
         });
     }
 

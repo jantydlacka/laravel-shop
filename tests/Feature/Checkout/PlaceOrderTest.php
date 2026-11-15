@@ -60,6 +60,16 @@ it('places an order with a snapshot of names and prices', function () {
     ]);
 });
 
+it('stores order totals beyond the 32-bit range', function () {
+    $products = Product::factory()->count(3)->create(['price' => 100_000_000, 'stock' => 99]);
+    $products->each(fn (Product $product) => app(Cart::class)->add($product, 99));
+
+    $order = placeOrder()->fresh();
+
+    expect($order->total)->toBe(29_700_000_000)
+        ->and($order->items->first()->line_total)->toBe(9_900_000_000);
+});
+
 it('decrements stock', function () {
     $product = Product::factory()->create(['stock' => 5]);
     app(Cart::class)->add($product, 2);
