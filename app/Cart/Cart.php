@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Support\Money;
 use Illuminate\Contracts\Session\Session;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 /**
  * Guest cart in the session: product id => quantity and the unit price the customer saw.
@@ -14,6 +15,8 @@ use Illuminate\Support\Collection;
 class Cart
 {
     private const SESSION_KEY = 'cart';
+
+    private const TOKEN_KEY = 'cart_token';
 
     public function __construct(private readonly Session $session) {}
 
@@ -27,6 +30,7 @@ class Cart
         ];
 
         $this->store($items);
+        $this->token();
     }
 
     public function update(int $productId, int $quantity): void
@@ -85,7 +89,31 @@ class Cart
 
     public function clear(): void
     {
-        $this->session->forget(self::SESSION_KEY);
+        $this->session->forget([self::SESSION_KEY, self::TOKEN_KEY]);
+    }
+
+    /**
+     * Identifies this cart until it is cleared. An order stores it, so a second request
+     * holding the same cart cannot place it again.
+     */
+    public function token(): string
+    {
+        if (! $this->session->has(self::TOKEN_KEY)) {
+            $this->session->put(self::TOKEN_KEY, (string) Str::uuid());
+        }
+
+        return $this->session->get(self::TOKEN_KEY);
+    }
+
+    /**
+     * Changes whenever quantities or remembered prices change.
+     */
+    public function fingerprint(): string
+    {
+        $items = $this->items();
+        ksort($items);
+
+        return hash('sha256', (string) json_encode($items));
     }
 
     /**

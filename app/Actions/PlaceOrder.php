@@ -7,10 +7,12 @@ use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
 use App\Exceptions\CartChangedException;
 use App\Exceptions\EmptyCartException;
+use App\Exceptions\OrderAlreadyPlacedException;
 use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
 use App\Support\Vat;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -18,16 +20,43 @@ use Illuminate\Support\Facades\Mail;
 class PlaceOrder
 {
     /**
+     * @param  string|null  $seenFingerprint  the cart the customer confirmed; null skips the check
+     *
      * @throws EmptyCartException
      * @throws CartChangedException when price, availability or stock differ from the cart
+     * @throws OrderAlreadyPlacedException when another request already placed this cart
      */
-    public function handle(Cart $cart, CheckoutData $data): Order
+    public function handle(Cart $cart, CheckoutData $data, ?string $seenFingerprint = null): Order
     {
         if ($cart->isEmpty()) {
             throw new EmptyCartException('The cart is empty.');
         }
 
-        $order = DB::transaction(function () use ($cart, $data): Order {
+        if ($seenFingerprint !== null && $seenFingerprint !== $cart->fingerprint()) {
+            throw new CartChangedException(['Košík se mezitím změnil, třeba v jiném okně. Zkontrolujte souhrn a objednávku odešlete znovu.']);
+        }
+
+        $token = $cart->token();
+
+        try {
+            $order = $this->create($cart, $data, $token);
+        } catch (UniqueConstraintViolationException) {
+            // The session is not locked: a parallel request with the same cart got there first.
+            $cart->clear();
+
+            throw new OrderAlreadyPlacedException(Order::query()->where('cart_token', $token)->sole());
+        }
+
+        $cart->clear();
+
+        Mail::to($order->email)->queue(new OrderPlaced($order));
+
+        return $order;
+    }
+
+    private function create(Cart $cart, CheckoutData $data, string $token): Order
+    {
+        return DB::transaction(function () use ($cart, $data, $token): Order {
             $items = $cart->items();
 
             // Locked in id order so concurrent checkouts of overlapping carts cannot deadlock.
@@ -63,6 +92,7 @@ class PlaceOrder
             $vatRate = (int) config('shop.vat_rate');
 
             $order = Order::query()->create([
+                'cart_token' => $token,
                 'status' => OrderStatus::New,
                 'customer_name' => $data->name,
                 'email' => $data->email,
@@ -81,12 +111,6 @@ class PlaceOrder
 
             return $order;
         });
-
-        $cart->clear();
-
-        Mail::to($order->email)->queue(new OrderPlaced($order));
-
-        return $order;
     }
 
     /**

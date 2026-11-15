@@ -6,9 +6,12 @@ use App\Data\CheckoutData;
 use App\Enums\OrderStatus;
 use App\Exceptions\CartChangedException;
 use App\Exceptions\EmptyCartException;
+use App\Exceptions\OrderAlreadyPlacedException;
 use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Mail;
 
 covers(PlaceOrder::class);
@@ -186,4 +189,42 @@ it('places the order after the customer saw the refreshed cart', function () {
     $order = placeOrder();
 
     expect($order->total)->toBe(12000);
+});
+
+it('places one order when two requests submit the same cart at once', function () {
+    $product = Product::factory()->create(['stock' => 5]);
+    $first = new Store('first', new ArraySessionHandler(10));
+    (new Cart($first))->add($product, 2);
+    // A second request read the session before the first one cleared the cart.
+    $second = new Store('second', new ArraySessionHandler(10));
+    $second->replace($first->all());
+
+    $order = app(PlaceOrder::class)->handle(new Cart($first), checkoutData());
+
+    try {
+        app(PlaceOrder::class)->handle(new Cart($second), checkoutData());
+        $this->fail('OrderAlreadyPlacedException was not thrown');
+    } catch (OrderAlreadyPlacedException $e) {
+        expect($e->order->is($order))->toBeTrue();
+    }
+
+    expect(Order::count())->toBe(1)
+        ->and($product->fresh()->stock)->toBe(3)
+        ->and((new Cart($second))->isEmpty())->toBeTrue();
+    Mail::assertQueuedCount(1);
+});
+
+it('refuses a cart that changed since the customer saw the summary', function () {
+    $product = Product::factory()->create(['price' => 10000, 'stock' => 10]);
+    $cart = app(Cart::class);
+    $cart->add($product, 1);
+    $seen = $cart->fingerprint();
+    $cart->add($product, 5);
+
+    expect(fn () => app(PlaceOrder::class)->handle($cart, checkoutData(), $seen))
+        ->toThrow(CartChangedException::class, 'Košík se mezitím změnil')
+        ->and(Order::count())->toBe(0)
+        ->and($product->fresh()->stock)->toBe(10);
+
+    expect(app(PlaceOrder::class)->handle($cart, checkoutData(), $cart->fingerprint())->total)->toBe(60000);
 });

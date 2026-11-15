@@ -7,9 +7,11 @@ use App\Cart\Cart;
 use App\Data\CheckoutData;
 use App\Exceptions\CartChangedException;
 use App\Exceptions\EmptyCartException;
+use App\Exceptions\OrderAlreadyPlacedException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -42,6 +44,10 @@ class CheckoutPage extends Component
 
     /** @var list<string> */
     public array $notices = [];
+
+    /** The cart as last shown in the summary; set on every render. */
+    #[Locked]
+    public string $cartFingerprint = '';
 
     public function mount(Cart $cart): mixed
     {
@@ -76,13 +82,18 @@ class CheckoutPage extends Component
                 city: $this->city,
                 zip: $this->zip,
                 note: $this->note !== '' ? $this->note : null,
-            ));
+            ), $this->cartFingerprint);
         } catch (CartChangedException $e) {
             $this->notices = $e->messages;
 
             if ($cart->isEmpty()) {
                 $this->backToCart($e->messages);
             }
+
+            return;
+        } catch (OrderAlreadyPlacedException $e) {
+            session()->put('checkout.last_order', $e->order->number);
+            $this->backToCart(["Objednávka č. {$e->order->number} už byla odeslána, košík je prázdný."]);
 
             return;
         } catch (EmptyCartException) {
@@ -110,6 +121,8 @@ class CheckoutPage extends Component
 
     public function render(Cart $cart): View
     {
+        $this->cartFingerprint = $cart->fingerprint();
+
         return view('livewire.checkout-page', [
             'lines' => $cart->lines(),
             'total' => $cart->total(),

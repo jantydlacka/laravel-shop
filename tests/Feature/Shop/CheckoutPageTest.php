@@ -1,6 +1,8 @@
 <?php
 
+use App\Actions\PlaceOrder;
 use App\Cart\Cart;
+use App\Exceptions\OrderAlreadyPlacedException;
 use App\Livewire\CheckoutPage;
 use App\Models\Order;
 use App\Models\Product;
@@ -72,6 +74,35 @@ it('sends the customer to the cart when everything in it sold out while filling 
 
     expect(session('status'))->toBe('Moka konvička je vyprodaný, odebrali jsme ho z košíku.')
         ->and(Order::count())->toBe(0);
+});
+
+it('refuses an order when the cart changed in another tab after the summary was shown', function () {
+    $product = Product::factory()->create(['name' => 'Moka konvička', 'price' => 10000, 'stock' => 10]);
+    app(Cart::class)->add($product, 1);
+    $component = fillCheckout();
+    app(Cart::class)->add($product, 5);
+
+    $component->call('submit')
+        ->assertNoRedirect()
+        ->assertSee('Košík se mezitím změnil')
+        ->assertSee('6× Moka konvička');
+
+    expect(Order::count())->toBe(0);
+
+    $component->call('submit')->assertRedirect();
+
+    expect(Order::sole()->total)->toBe(60000);
+});
+
+it('sends the customer to the cart when a parallel request already placed the order', function () {
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+    $order = Order::factory()->create();
+    $this->mock(PlaceOrder::class)->shouldReceive('handle')->andThrow(new OrderAlreadyPlacedException($order));
+
+    fillCheckout()->call('submit')->assertRedirect(route('shop.cart'));
+
+    expect(session('status'))->toBe("Objednávka č. {$order->number} už byla odeslána, košík je prázdný.")
+        ->and(session('checkout.last_order'))->toBe($order->number);
 });
 
 it('rejects a note longer than 2000 characters with a visible message', function () {

@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             // Derived from the id, so it is filled right after the insert.
             $table->string('number')->nullable()->unique();
+            $table->uuid('cart_token')->nullable()->unique();
             $table->string('status')->index();
             $table->string('customer_name');
             $table->string('email');
