@@ -20,7 +20,7 @@ The storefront and the admin are in Czech; code, comments and docs are in Englis
 - **Catalogue** – categories, product listing and detail; sold-out products stay visible, unavailable ones return 404.
 - **Session cart** (Livewire) – add, change quantity, remove; quantities are validated against stock and a per-line limit.
 - **Guest checkout** – name, e-mail, phone, address, note; free delivery, no payment.
-- **Order confirmation** – a signed URL, so order numbers cannot be enumerated to read other people's addresses.
+- **Order confirmation** – a signed URL valid for an hour, so order numbers cannot be enumerated to read other people's addresses.
 - **Confirmation e-mail** – a queued Mailable, dispatched only after the order transaction commits.
 - **Admin** (Filament, `/admin`) – categories and products (CRUD), orders (list with status filter, detail with VAT breakdown, status changes as actions – orders are never edited freely).
 - **Demo data** – 3 categories, 12 products with bundled images and 6 orders in every state, all placed through the real checkout so stock adds up.

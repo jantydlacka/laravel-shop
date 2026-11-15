@@ -72,12 +72,13 @@ it('shows the order summary', function () {
 });
 
 it('places the order and redirects to a signed confirmation', function () {
+    $this->freezeTime();
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 
     $component = fillCheckout()->call('submit')->assertHasNoErrors();
 
     $order = Order::sole();
-    $component->assertRedirect(URL::signedRoute('shop.order.confirmation', $order));
+    $component->assertRedirect(URL::temporarySignedRoute('shop.order.confirmation', now()->addHour(), ['order' => $order]));
 });
 
 it('validates required fields with a message of their own', function (string $field, string $message) {
@@ -146,6 +147,18 @@ it('sends a repeated submit back to the cart with a message', function () {
 
     expect(Order::count())->toBe(1)
         ->and(session('status'))->toContain('prázdný');
+});
+
+it('lets the confirmation link expire after an hour', function () {
+    $this->freezeTime();
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+    $url = fillCheckout()->call('submit')->effects['redirect'];
+
+    $this->travel(59)->minutes();
+    $this->get($url)->assertOk();
+
+    $this->travel(2)->minutes();
+    $this->get($url)->assertForbidden();
 });
 
 it('shows the confirmation on a signed url', function () {

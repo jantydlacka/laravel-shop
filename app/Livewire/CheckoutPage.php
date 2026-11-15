@@ -85,7 +85,7 @@ class CheckoutPage extends Component
         }
 
         session()->put('checkout.last_order', $order->number);
-        $this->redirect(URL::signedRoute('shop.order.confirmation', $order));
+        $this->redirect(URL::temporarySignedRoute('shop.order.confirmation', now()->addHour(), ['order' => $order]));
     }
 
     public function render(Cart $cart): View
