@@ -35,7 +35,7 @@ it('parses a crown amount into hellers without floats', function (string $input,
 
 it('rejects malformed crown amounts', function (string $input) {
     Money::parseCrowns($input);
-})->with(['-1', 'abc', '12,345', '', '1 299'])->throws(InvalidArgumentException::class);
+})->with(['-1', 'abc', '12,345', '', '1 299', 'too many digits' => '99999999999999999'])->throws(InvalidArgumentException::class);
 
 it('renders hellers as an editable crown amount', function (int $hellers, string $crowns) {
     expect(Money::toCrowns($hellers))->toBe($crowns);

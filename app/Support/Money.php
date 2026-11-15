@@ -9,7 +9,8 @@ use InvalidArgumentException;
  */
 final class Money
 {
-    public const CROWNS_PATTERN = '/^\d+([.,]\d{1,2})?$/';
+    /** At most 15 digits of crowns, so the hellers stay within an int. */
+    public const CROWNS_PATTERN = '/^\d{1,15}([.,]\d{1,2})?$/';
 
     public static function format(int $hellers): string
     {

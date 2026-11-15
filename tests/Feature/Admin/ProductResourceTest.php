@@ -54,7 +54,7 @@ it('rejects an invalid price', function (string $input) {
         ->assertHasFormErrors(['price']);
 
     expect(Product::count())->toBe(0);
-})->with(['-1', 'abc', '12,345', '']);
+})->with(['-1', 'abc', '12,345', '', 'too many digits' => '99999999999999999']);
 
 it('rejects a price above the limit with a Czech message', function () {
     livewire(CreateProduct::class)
