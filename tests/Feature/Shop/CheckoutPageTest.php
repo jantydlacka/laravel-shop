@@ -105,6 +105,30 @@ it('sends the customer to the cart when a parallel request already placed the or
         ->and(session('checkout.last_order'))->toBe($order->number);
 });
 
+it('stops placing orders from one address after the hourly limit', function () {
+    config(['shop.orders_per_hour' => 2]);
+    $product = Product::factory()->create(['stock' => 10]);
+
+    foreach (range(1, 2) as $i) {
+        app(Cart::class)->add($product, 1);
+        fillCheckout()->call('submit')->assertRedirect();
+    }
+
+    app(Cart::class)->add($product, 1);
+    fillCheckout()->call('submit')
+        ->assertNoRedirect()
+        ->assertHasErrors(['submit' => 'Z vaší adresy přišlo v poslední hodině příliš mnoho objednávek. Zkuste to prosím později.'])
+        ->assertSee('příliš mnoho objednávek');
+
+    expect(Order::count())->toBe(2)
+        ->and($product->fresh()->stock)->toBe(8);
+
+    $this->travel(61)->minutes();
+    fillCheckout()->call('submit')->assertRedirect();
+
+    expect(Order::count())->toBe(3);
+});
+
 it('rejects a note longer than 2000 characters with a visible message', function () {
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 

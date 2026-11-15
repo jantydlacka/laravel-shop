@@ -41,6 +41,9 @@
                         class="rounded-full bg-stone-900 px-6 py-3 font-medium text-white disabled:opacity-50">
                     Odeslat objednávku
                 </button>
+                @error('submit')
+                    <p class="mt-2 text-sm text-red-700" role="alert">{{ $message }}</p>
+                @enderror
                 <p class="mt-2 text-sm text-stone-500">Doprava zdarma. Ukázkový obchod – nic se neplatí.</p>
             </div>
         </form>

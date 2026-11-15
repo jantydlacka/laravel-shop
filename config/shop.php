@@ -6,4 +6,7 @@ return [
 
     // Upper limit for the quantity of one product in the cart.
     'max_quantity' => 99,
+
+    // Orders one IP address may place per hour; each one takes stock and sends an e-mail.
+    'orders_per_hour' => 10,
 ];

@@ -9,6 +9,7 @@ use App\Exceptions\CartChangedException;
 use App\Exceptions\EmptyCartException;
 use App\Exceptions\OrderAlreadyPlacedException;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -73,6 +74,15 @@ class CheckoutPage extends Component
     {
         $this->validate();
 
+        // Throttled here, not on the route: the form posts to Livewire's own endpoint.
+        $limiterKey = 'place-order:'.request()->ip();
+
+        if (RateLimiter::tooManyAttempts($limiterKey, (int) config('shop.orders_per_hour'))) {
+            $this->addError('submit', 'Z vaší adresy přišlo v poslední hodině příliš mnoho objednávek. Zkuste to prosím později.');
+
+            return;
+        }
+
         try {
             $order = $placeOrder->handle($cart, new CheckoutData(
                 name: $this->name,
@@ -103,6 +113,7 @@ class CheckoutPage extends Component
             return;
         }
 
+        RateLimiter::hit($limiterKey, 3600);
         session()->put('checkout.last_order', $order->number);
         $this->redirect(URL::temporarySignedRoute('shop.order.confirmation', now()->addHour(), ['order' => $order]));
     }

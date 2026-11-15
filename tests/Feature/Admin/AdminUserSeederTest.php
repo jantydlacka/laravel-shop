@@ -13,3 +13,11 @@ it('seeds one admin user idempotently', function () {
     expect($admin->email)->toBe('admin@example.com')
         ->and(Hash::check('password', $admin->password))->toBeTrue();
 });
+
+it('does not create the well-known admin login in production', function () {
+    app()->detectEnvironment(fn () => 'production');
+
+    $this->artisan('db:seed', ['--class' => AdminUserSeeder::class, '--force' => true])->assertSuccessful();
+
+    expect(User::count())->toBe(0);
+});

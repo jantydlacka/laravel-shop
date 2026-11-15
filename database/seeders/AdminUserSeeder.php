@@ -12,6 +12,12 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->isProduction()) {
+            $this->command?->warn('Skipping the demo admin login in production; create a user with your own password.');
+
+            return;
+        }
+
         User::query()->updateOrCreate(
             ['email' => 'admin@example.com'],
             ['name' => 'Admin', 'password' => 'password'],
