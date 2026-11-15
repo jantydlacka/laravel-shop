@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Storage;
 
 class DemoCatalogSeeder extends Seeder
 {
@@ -55,6 +56,10 @@ class DemoCatalogSeeder extends Seeder
             );
 
             foreach ($categoryData['products'] as [$slug, $name, $price, $stock, $available, $description]) {
+                // On the public disk like uploaded images, so the admin form keeps them on save.
+                $imagePath = "products/{$slug}.svg";
+                Storage::disk('public')->put($imagePath, (string) file_get_contents(__DIR__."/images/{$slug}.svg"));
+
                 Product::query()->updateOrCreate(['slug' => $slug], [
                     'category_id' => $category->id,
                     'name' => $name,
@@ -62,7 +67,7 @@ class DemoCatalogSeeder extends Seeder
                     'price' => $price,
                     'stock' => $stock,
                     'is_available' => $available,
-                    'image_path' => "images/demo/{$slug}.svg",
+                    'image_path' => $imagePath,
                 ]);
             }
         }

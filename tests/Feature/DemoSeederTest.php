@@ -8,6 +8,11 @@ use App\Models\Product;
 use App\Models\User;
 use Database\Seeders\DemoCatalogSeeder;
 use Database\Seeders\DemoOrderSeeder;
+use Illuminate\Support\Facades\Storage;
+
+beforeEach(function () {
+    Storage::fake('public');
+});
 
 it('seeds a browsable demo catalog and the admin user', function () {
     $this->seed();
@@ -28,14 +33,14 @@ it('can be run twice', function () {
     expect([Category::count(), Product::count(), User::count(), Order::count()])->toBe($counts);
 });
 
-it('points every product image at a file shipped in the repository', function () {
+it('puts every product image on the public disk', function () {
     $this->seed();
 
     expect(Product::count())->toBeGreaterThan(0);
 
     Product::all()->each(function (Product $product) {
-        expect($product->image_path)->toStartWith('images/demo/')
-            ->and(public_path($product->image_path))->toBeFile();
+        expect($product->image_path)->toBe("products/{$product->slug}.svg");
+        Storage::disk('public')->assertExists($product->image_path);
     });
 });
 

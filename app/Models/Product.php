@@ -54,17 +54,13 @@ class Product extends Model
     }
 
     /**
-     * Demo images ship in public/images/demo, uploaded ones live on the public disk.
-     *
      * @return Attribute<string|null, never>
      */
     protected function imageUrl(): Attribute
     {
-        return Attribute::get(fn (): ?string => match (true) {
-            $this->image_path === null => null,
-            str_starts_with($this->image_path, 'images/') => asset($this->image_path),
-            default => Storage::disk('public')->url($this->image_path),
-        });
+        return Attribute::get(fn (): ?string => $this->image_path === null
+            ? null
+            : Storage::disk('public')->url($this->image_path));
     }
 
     /**

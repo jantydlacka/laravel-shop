@@ -85,6 +85,7 @@ docker run --rm -u "$(id -u):$(id -g)" -v "$PWD":/app -w /app composer:2.10 \
 
 ./vendor/bin/sail up -d --wait
 ./vendor/bin/sail artisan key:generate
+./vendor/bin/sail artisan storage:link
 ./vendor/bin/sail artisan migrate --seed
 ./vendor/bin/sail npm ci
 ./vendor/bin/sail npm run build

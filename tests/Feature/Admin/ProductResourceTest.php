@@ -6,6 +6,8 @@ use App\Filament\Resources\Products\Pages\ListProducts;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\User;
+use Database\Seeders\DemoCatalogSeeder;
+use Illuminate\Support\Facades\Storage;
 
 use function Pest\Livewire\livewire;
 
@@ -107,4 +109,17 @@ it('lists products with formatted prices', function () {
     livewire(ListProducts::class)
         ->assertCanSeeTableRecords([$product])
         ->assertSee(str_replace(' ', "\u{a0}", '1 299,50 Kč'));
+});
+
+it('keeps a seeded image when the product is saved unchanged', function () {
+    Storage::fake('public');
+    $this->seed(DemoCatalogSeeder::class);
+    $product = Product::where('slug', 'rooibos-vanilka')->sole();
+    $imagePath = $product->image_path;
+
+    livewire(EditProduct::class, ['record' => $product->getRouteKey()])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($product->refresh()->image_path)->toBe($imagePath)->not->toBeNull();
 });
