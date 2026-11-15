@@ -33,6 +33,21 @@ it('can be run twice', function () {
     expect([Category::count(), Product::count(), User::count(), Order::count()])->toBe($counts);
 });
 
+it('leaves existing products alone when run again', function () {
+    $this->seed();
+    Product::where('slug', 'earl-grey')->update(['description' => 'Upraveno v adminu', 'image_path' => 'products/upload.png']);
+    Category::where('slug', 'caj')->update(['name' => 'Čaje']);
+    $stock = Product::pluck('stock', 'slug')->all();
+
+    $this->seed();
+
+    expect(Product::pluck('stock', 'slug')->all())->toBe($stock)
+        ->and(Product::where('slug', 'earl-grey')->sole())
+        ->description->toBe('Upraveno v adminu')
+        ->image_path->toBe('products/upload.png')
+        ->and(Category::where('slug', 'caj')->value('name'))->toBe('Čaje');
+});
+
 it('puts every product image on the public disk', function () {
     $this->seed();
 

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Storage;
 class DemoCatalogSeeder extends Seeder
 {
     /**
-     * Prices are hellers including VAT. Keyed by slug so the seeder can run repeatedly.
+     * Prices are hellers including VAT. Keyed by slug; running the seeder again only adds what is missing.
      *
      * @var array<string, array{name: string, position: int, products: list<array{string, string, int, int, bool, string}>}>
      */
@@ -50,19 +50,25 @@ class DemoCatalogSeeder extends Seeder
     public function run(): void
     {
         foreach (self::CATALOG as $categorySlug => $categoryData) {
-            $category = Category::query()->updateOrCreate(
+            $category = Category::query()->firstOrCreate(
                 ['slug' => $categorySlug],
                 ['name' => $categoryData['name'], 'position' => $categoryData['position']],
             );
 
             foreach ($categoryData['products'] as [$slug, $name, $price, $stock, $available, $description]) {
+                // Existing products keep their stock (orders took from it) and admin edits.
+                if (Product::query()->where('slug', $slug)->exists()) {
+                    continue;
+                }
+
                 // On the public disk like uploaded images, so the admin form keeps them on save.
                 $imagePath = "products/{$slug}.svg";
                 Storage::disk('public')->put($imagePath, (string) file_get_contents(__DIR__."/images/{$slug}.svg"));
 
-                Product::query()->updateOrCreate(['slug' => $slug], [
+                Product::query()->create([
                     'category_id' => $category->id,
                     'name' => $name,
+                    'slug' => $slug,
                     'description' => $description,
                     'price' => $price,
                     'stock' => $stock,
