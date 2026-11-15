@@ -61,6 +61,39 @@ it('counts what is already in the cart against stock', function () {
     expect(app(Cart::class)->quantityOf($product->id))->toBe(4);
 });
 
+it('refuses a product taken off sale after the page was loaded', function () {
+    $product = Product::factory()->create(['stock' => 5]);
+    $component = livewire(AddToCart::class, ['product' => $product]);
+    $product->update(['is_available' => false]);
+
+    $component->call('add')
+        ->assertHasErrors(['quantity' => 'Tento produkt už není v prodeji.'])
+        ->assertNotDispatched('cart-updated');
+
+    expect(app(Cart::class)->isEmpty())->toBeTrue();
+});
+
+it('says the product is sold out when stock ran out after the page was loaded', function () {
+    $product = Product::factory()->create(['stock' => 5]);
+    $component = livewire(AddToCart::class, ['product' => $product]);
+    $product->update(['stock' => 0]);
+
+    $component->call('add')->assertHasErrors(['quantity' => 'Produkt je vyprodaný.']);
+
+    expect(app(Cart::class)->isEmpty())->toBeTrue();
+});
+
+it('says everything in stock is already in the cart', function () {
+    $product = Product::factory()->create(['stock' => 2]);
+    app(Cart::class)->add($product, 2);
+
+    livewire(AddToCart::class, ['product' => $product])
+        ->call('add')
+        ->assertHasErrors(['quantity' => 'Víc kusů už do košíku přidat nejde, máte v něm vše, co je skladem.']);
+
+    expect(app(Cart::class)->quantityOf($product->id))->toBe(2);
+});
+
 it('shows a Czech validation message', function () {
     $product = Product::factory()->create(['stock' => 5]);
 

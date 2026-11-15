@@ -20,6 +20,20 @@ class AddToCart extends Component
     public function add(Cart $cart): void
     {
         $this->added = false;
+
+        // The product is reloaded on every request, so these see changes made after the page was rendered.
+        if (! $this->product->is_available) {
+            $this->addError('quantity', 'Tento produkt už není v prodeji.');
+
+            return;
+        }
+
+        if ($this->product->stock < 1) {
+            $this->addError('quantity', 'Produkt je vyprodaný.');
+
+            return;
+        }
+
         $max = Cart::maxQuantityFor($this->product) - $cart->quantityOf($this->product->id);
 
         if ($max < 1) {
