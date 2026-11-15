@@ -19,25 +19,25 @@ use Livewire\Component;
 class CheckoutPage extends Component
 {
     // Message keys carry the field name: Livewire merges them into one list for the whole component.
-    #[Validate('required|string|max:255', message: ['name.required' => 'Vyplňte jméno a příjmení.'])]
+    #[Validate('required|string|max:255', message: ['name.required' => 'Vyplňte jméno a příjmení.'], as: 'jméno a příjmení')]
     public string $name = '';
 
-    #[Validate('required|email|max:255', message: ['email.required' => 'Vyplňte e-mail.', 'email.email' => 'Zadejte platný e-mail.'])]
+    #[Validate('required|email|max:255', message: ['email.required' => 'Vyplňte e-mail.', 'email.email' => 'Zadejte platný e-mail.'], as: 'e-mail')]
     public string $email = '';
 
-    #[Validate('required|string|max:30', message: ['phone.required' => 'Vyplňte telefon.'])]
+    #[Validate('required|string|max:30', message: ['phone.required' => 'Vyplňte telefon.'], as: 'telefon')]
     public string $phone = '';
 
-    #[Validate('required|string|max:255', message: ['street.required' => 'Vyplňte ulici a číslo domu.'])]
+    #[Validate('required|string|max:255', message: ['street.required' => 'Vyplňte ulici a číslo domu.'], as: 'ulice a číslo domu')]
     public string $street = '';
 
-    #[Validate('required|string|max:255', message: ['city.required' => 'Vyplňte město.'])]
+    #[Validate('required|string|max:255', message: ['city.required' => 'Vyplňte město.'], as: 'město')]
     public string $city = '';
 
-    #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['zip.required' => 'Vyplňte PSČ.', 'zip.regex' => 'PSČ má pět číslic, např. 110 00.'])]
+    #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['zip.required' => 'Vyplňte PSČ.', 'zip.regex' => 'PSČ má pět číslic, např. 110 00.'], as: 'PSČ')]
     public string $zip = '';
 
-    #[Validate('nullable|string|max:2000', message: ['note.max' => 'Poznámka může mít nejvýš 2000 znaků.'])]
+    #[Validate('nullable|string|max:2000', message: ['note.max' => 'Poznámka může mít nejvýš 2000 znaků.'], as: 'poznámka')]
     public string $note = '';
 
     /** @var list<string> */

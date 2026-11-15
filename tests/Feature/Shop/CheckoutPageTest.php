@@ -96,6 +96,20 @@ it('validates required fields with a message of their own', function (string $fi
     ['zip', 'Vyplňte PSČ.'],
 ]);
 
+it('names the field in Czech when the input is too long', function (string $field, int $max, string $message) {
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+
+    $value = $field === 'email' ? str_repeat('a', $max).'@example.com' : str_repeat('a', $max + 1);
+
+    fillCheckout([$field => $value])->call('submit')->assertHasErrors([$field => $message]);
+})->with([
+    ['name', 255, 'Pole jméno a příjmení smí mít nejvýš 255 znaků.'],
+    ['email', 255, 'Pole e-mail smí mít nejvýš 255 znaků.'],
+    ['phone', 30, 'Pole telefon smí mít nejvýš 30 znaků.'],
+    ['street', 255, 'Pole ulice a číslo domu smí mít nejvýš 255 znaků.'],
+    ['city', 255, 'Pole město smí mít nejvýš 255 znaků.'],
+]);
+
 it('validates the e-mail format', function () {
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 
