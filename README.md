@@ -23,7 +23,7 @@ The storefront and the admin are in Czech; code, comments and docs are in Englis
 - **Order confirmation** – a signed URL valid for an hour, so order numbers cannot be enumerated to read other people's addresses.
 - **Confirmation e-mail** – a queued Mailable, dispatched only after the order transaction commits.
 - **Admin** (Filament, `/admin`) – categories and products (CRUD), orders (list with status filter, detail with VAT breakdown, status changes as actions – orders are never edited freely).
-- **Demo data** – 3 categories, 12 products with bundled images and 6 orders in every state, all placed through the real checkout so stock adds up.
+- **Demo data** – 3 categories, 12 products with bundled images and 6 orders that together cover every state, all placed through the real checkout so stock adds up.
 
 ## Domain decisions
 
@@ -41,6 +41,13 @@ the time of purchase. Renaming, repricing or deleting a product does not change 
 **The cart can go stale.** The cart remembers the price the customer saw. If the price,
 availability or stock changes before the order is submitted, no order is created: the cart is
 refreshed to current values and the customer sees exactly what changed before submitting again.
+The order is also refused when the cart differs from the summary the customer confirmed, for
+example after a change in another tab.
+
+**One cart, one order.** The cart carries a token that the order stores under a unique index, so
+a double click or two parallel requests from the same session create a single order; the second
+request rolls back and the customer is told the order was already sent. Orders from one IP
+address are limited to 10 an hour (`config/shop.php`).
 
 **Stock is taken under a row lock.** Checkout locks the products (`lockForUpdate`, always in id
 order, so overlapping carts cannot deadlock) and checks stock inside the transaction. Verified
@@ -52,6 +59,10 @@ of a clear message – the lock is what turns a collision into a clean refusal.
 **Order states** are an enum with an explicit transition matrix; `TransitionOrder` is the only
 place that changes a status. It re-reads the order under a lock, so two admins cancelling the
 same order at once cannot return the stock twice. Cancelling returns the goods to stock.
+
+**The admin cannot overwrite stock it did not touch.** Saving a product writes the stock only
+when the admin changed it, and only if it still holds the value the form loaded; if an order or
+a cancellation moved it in the meantime, nothing is saved and the admin sees the current count.
 
 ```mermaid
 stateDiagram-v2
@@ -65,12 +76,12 @@ stateDiagram-v2
     cancelled --> [*]
 ```
 
-Order numbers are readable (`2026000123` = year + sequence).
+Order numbers are readable (`2026000123` = year of the order + its id, which keeps counting across years). Dates and times are in Czech time (`Europe/Prague`).
 
 ## Tech stack
 
 Laravel 13 · PHP 8.4 · MySQL 8 · Livewire 4 · Filament 5 · Tailwind CSS 4 + Vite ·
-Laravel Sail (Docker) · Mailpit · Pest 4 (+ browser and mutation plugins) · Larastan (level 6) · Pint
+Laravel Sail (Docker) · Mailpit · Pest 4 (with the browser plugin and built-in mutation testing) · Larastan (level 6) · Pint
 
 ## Quick start
 
@@ -97,7 +108,10 @@ connections, and `migrate` would fail without it.
 - Shop: <http://localhost:8088>
 - Admin: <http://localhost:8088/admin> – `admin@example.com` / `password`
 - Mailpit (sent e-mails): <http://localhost:8025> – confirmation e-mails are queued; run
-  `./vendor/bin/sail artisan queue:work` to send them.
+  `./vendor/bin/sail artisan queue:work` to send them. The first six are the confirmations of
+  the demo orders.
+
+The demo admin is not created when `APP_ENV=production`.
 
 Ports are set in `.env` (`APP_PORT`, `FORWARD_DB_PORT`, …) if the defaults are taken.
 
@@ -109,7 +123,7 @@ All commands run inside Sail (`./vendor/bin/sail composer <script>`):
 |---|---|
 | `qa` | Pint (`--test`), Larastan, the Pest unit + feature suite in parallel |
 | `race` | the stock race: 10 processes buy the last piece at once on a separate `shop_race` database; fails unless exactly one order is created (`scripts/race-check.sh 20` for more processes) |
-| `mutate` | mutation testing of the checkout and order domain (`Cart`, `PlaceOrder`, `TransitionOrder`, `Vat`), minimum score 80 % |
+| `mutate` | mutation testing of the checkout and order domain (`Cart`, `CartLine`, `PlaceOrder`, `TransitionOrder`, `OrderStatus`, `Vat`), minimum score 80 % |
 | `test:browser` | Playwright tests of the purchase path and the admin status change (needs the built assets) |
 
 The browser tests need Chromium once: `./vendor/bin/sail npx playwright install chromium --only-shell`.
@@ -121,9 +135,8 @@ Playwright cache).
 Product variants, discounts and coupons, payments, search, customer accounts, multiple
 currencies, languages or VAT rates, priced shipping methods, invoices.
 
-Known limitation: a second submit of the same checkout is handled (the cart is empty, the
-customer is sent back with a message), but two truly simultaneous requests from one session
-are not deduplicated by an idempotency key.
+Security headers (CSP, HSTS, `X-Frame-Options`, …) are left to the web server in front of the
+application.
 
 ## License
 
