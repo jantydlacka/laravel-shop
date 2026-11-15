@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Cart\Cart;
+use Illuminate\Mail\Markdown;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Mails interpolate what customers typed; without this, Markdown in a name becomes a link.
+        Markdown::withSecuredEncoding();
     }
 }

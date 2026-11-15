@@ -18,3 +18,18 @@ it('renders the confirmation e-mail with items, total and address', function () 
         ->assertSeeInHtml(Money::format($order->fresh()->total), false)
         ->assertSeeInHtml('Na Příkopě 12');
 });
+
+it('does not turn Markdown typed by the customer into links', function () {
+    $order = Order::factory()
+        ->withItem(Product::factory()->create(), 1)
+        ->create([
+            'customer_name' => '[Zaplaťte zde](https://attacker.example)',
+            'street' => '<https://attacker.example/street>',
+            'city' => '[x][1]',
+        ]);
+
+    $html = (new OrderPlaced($order->fresh()))->render();
+
+    expect($html)->not->toContain('href="https://attacker.example')
+        ->and($html)->toContain('[Zaplaťte zde](https://attacker.example)');
+});
