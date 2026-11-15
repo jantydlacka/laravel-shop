@@ -45,18 +45,22 @@ class CheckoutPage extends Component
 
     public function mount(Cart $cart): mixed
     {
-        if ($cart->isEmpty()) {
-            // Back button or reload after an order: the cart is already empty, say why.
-            if (session()->has('checkout.last_order')) {
-                session()->flash('status', 'Objednávka č. '.session('checkout.last_order').' už byla odeslána, košík je prázdný.');
-            }
-
-            return $this->redirectRoute('shop.cart');
-        }
-
         $this->notices = $cart->refresh();
 
-        return null;
+        if (! $cart->isEmpty()) {
+            return null;
+        }
+
+        if ($this->notices !== []) {
+            return $this->backToCart($this->notices);
+        }
+
+        // Back button or reload after an order: the cart is already empty, say why.
+        if (session()->has('checkout.last_order')) {
+            session()->flash('status', 'Objednávka č. '.session('checkout.last_order').' už byla odeslána, košík je prázdný.');
+        }
+
+        return $this->redirectRoute('shop.cart');
     }
 
     public function submit(PlaceOrder $placeOrder, Cart $cart): void
@@ -76,6 +80,10 @@ class CheckoutPage extends Component
         } catch (CartChangedException $e) {
             $this->notices = $e->messages;
 
+            if ($cart->isEmpty()) {
+                $this->backToCart($e->messages);
+            }
+
             return;
         } catch (EmptyCartException) {
             session()->flash('status', 'Košík je prázdný – objednávka už byla odeslána, nebo jste z něj vše odebrali.');
@@ -86,6 +94,18 @@ class CheckoutPage extends Component
 
         session()->put('checkout.last_order', $order->number);
         $this->redirect(URL::temporarySignedRoute('shop.order.confirmation', now()->addHour(), ['order' => $order]));
+    }
+
+    /**
+     * Nothing left to order: an empty form with a zero total would only invite another submit.
+     *
+     * @param  list<string>  $notices
+     */
+    private function backToCart(array $notices): mixed
+    {
+        session()->flash('status', implode(' ', $notices));
+
+        return $this->redirectRoute('shop.cart');
     }
 
     public function render(Cart $cart): View

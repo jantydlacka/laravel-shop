@@ -52,6 +52,28 @@ it('tells the customer the order was already sent when they come back to the che
         ->assertSessionHas('status', "Objednávka č. {$order->number} už byla odeslána, košík je prázdný.");
 });
 
+it('sends the customer to the cart when everything in it sold out before the checkout opened', function () {
+    $product = Product::factory()->create(['name' => 'Moka konvička', 'stock' => 5]);
+    app(Cart::class)->add($product, 1);
+    $product->update(['stock' => 0]);
+
+    $this->get(route('shop.checkout'))
+        ->assertRedirect(route('shop.cart'))
+        ->assertSessionHas('status', 'Moka konvička je vyprodaný, odebrali jsme ho z košíku.');
+});
+
+it('sends the customer to the cart when everything in it sold out while filling in the form', function () {
+    $product = Product::factory()->create(['name' => 'Moka konvička', 'stock' => 5]);
+    app(Cart::class)->add($product, 1);
+    $component = fillCheckout();
+    $product->update(['stock' => 0]);
+
+    $component->call('submit')->assertRedirect(route('shop.cart'));
+
+    expect(session('status'))->toBe('Moka konvička je vyprodaný, odebrali jsme ho z košíku.')
+        ->and(Order::count())->toBe(0);
+});
+
 it('rejects a note longer than 2000 characters with a visible message', function () {
     app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
 
