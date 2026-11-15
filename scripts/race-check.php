@@ -47,6 +47,15 @@ function boot(string $root): void
     require_once $root.'/vendor/autoload.php';
     $app = require $root.'/bootstrap/app.php';
     $app->make(Kernel::class)->bootstrap();
+
+    // A cached config ignores the environment set above, and migrate:fresh would then
+    // wipe the development database.
+    $database = config('database.connections.'.config('database.default').'.database');
+
+    if ($database !== RACE_DATABASE) {
+        fwrite(STDERR, "Refusing to run against database '{$database}'. Run `php artisan config:clear` first.\n");
+        exit(2);
+    }
 }
 
 function orchestrate(string $root, int $processes, array $env): int
