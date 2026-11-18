@@ -22,17 +22,21 @@ it('buys a product as a guest', function () {
         ->assertPathIs('/kosik')
         ->click('Pokračovat k objednávce')
         ->assertPathIs('/pokladna')
-        ->waitForEvent('load')
-        ->fill('name', 'Jana Nováková')
+        ->waitForEvent('load');
+
+    // This test once lost the typed name without a trace; the input log and the check below show where it went.
+    $page->script("window.__inputs = []; document.addEventListener('input', e => window.__inputs.push([e.target.id, e.target.value, Math.round(performance.now())]), true)");
+
+    $page->fill('name', 'Jana Nováková')
         ->fill('email', 'jana@example.com')
         ->fill('phone', '777 123 456')
         ->fill('street', 'Na Příkopě 12')
         ->fill('city', 'Praha')
         ->fill('zip', '110 00');
 
-    // This test once lost the typed name without a trace; this shows whether the page or Livewire dropped it.
-    $name = $page->script("(() => ({dom: document.getElementById('name').value, livewire: Livewire.all().find(c => c.name === 'checkout-page')?.\$wire.name ?? null}))()");
-    expect($name)->toBe(['dom' => 'Jana Nováková', 'livewire' => 'Jana Nováková']);
+    $state = $page->script("(() => ({dom: document.getElementById('name').value, livewire: Livewire.all().find(c => c.name === 'checkout-page')?.\$wire.name ?? null, readyState: document.readyState, inputs: window.__inputs}))()");
+    expect(['dom' => $state['dom'], 'livewire' => $state['livewire']])
+        ->toBe(['dom' => 'Jana Nováková', 'livewire' => 'Jana Nováková'], json_encode($state, JSON_UNESCAPED_UNICODE));
 
     $page->press('Odeslat objednávku')
         ->assertPathBeginsWith('/objednavka/');
