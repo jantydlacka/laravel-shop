@@ -28,8 +28,13 @@ it('buys a product as a guest', function () {
         ->fill('phone', '777 123 456')
         ->fill('street', 'Na Příkopě 12')
         ->fill('city', 'Praha')
-        ->fill('zip', '110 00')
-        ->press('Odeslat objednávku')
+        ->fill('zip', '110 00');
+
+    // This test once lost the typed name without a trace; this shows whether the page or Livewire dropped it.
+    $name = $page->script("(() => ({dom: document.getElementById('name').value, livewire: Livewire.all().find(c => c.name === 'checkout-page')?.\$wire.name ?? null}))()");
+    expect($name)->toBe(['dom' => 'Jana Nováková', 'livewire' => 'Jana Nováková']);
+
+    $page->press('Odeslat objednávku')
         ->assertPathBeginsWith('/objednavka/');
 
     $order = Order::sole();
