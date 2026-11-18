@@ -26,7 +26,7 @@ function checkoutData(): CheckoutData
     return new CheckoutData(
         name: 'Jana Nováková',
         email: 'jana@example.com',
-        phone: '+420 777 123 456',
+        phone: '+420 000 000 000',
         street: 'Dlouhá 12',
         city: 'Praha',
         zip: '110 00',

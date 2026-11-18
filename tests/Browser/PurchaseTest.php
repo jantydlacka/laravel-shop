@@ -29,7 +29,7 @@ it('buys a product as a guest', function () {
 
     $page->fill('name', 'Jana Nováková')
         ->fill('email', 'jana@example.com')
-        ->fill('phone', '777 123 456')
+        ->fill('phone', '000 000 000')
         ->fill('street', 'Na Příkopě 12')
         ->fill('city', 'Praha')
         ->fill('zip', '110 00');
