@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: intl, pdo_mysql, zip
+          coverage: none
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          # The race script reads the database settings from .env only.
+          sed -i -e 's/^DB_HOST=.*/DB_HOST=127.0.0.1/' -e 's/^DB_USERNAME=.*/DB_USERNAME=root/' .env
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - run: php artisan key:generate
+
+      - name: Pint, Larastan, Pest
+        run: composer qa
+
+      - name: Stock race
+        run: composer race
