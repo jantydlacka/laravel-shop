@@ -1,5 +1,7 @@
 # Laravel Shop
 
+[![CI](https://github.com/jantydlacka/laravel-shop/actions/workflows/ci.yml/badge.svg)](https://github.com/jantydlacka/laravel-shop/actions/workflows/ci.yml)
+
 A small coffee & tea shop built with Laravel 13, Livewire 4 and Filament 5. Guests browse a
 catalogue, fill a session cart and place an order without registering; the shop owner manages
 the catalogue and moves orders through their states in an admin panel. It is a portfolio
