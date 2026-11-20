@@ -73,6 +73,10 @@
             "Composer\\Config::disableProcessTimeout",
             "@php scripts/race-check.php"
         ],
+        "race:token": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php scripts/race-check.php --same-token"
+        ],
         "mutate": [
             "Composer\\Config::disableProcessTimeout",
             "@php artisan config:clear --ansi",
