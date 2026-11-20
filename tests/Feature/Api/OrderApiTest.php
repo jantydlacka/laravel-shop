@@ -47,7 +47,7 @@ it('places an order and lowers the stock', function () {
     $response = postOrder([apiLine($product, 2)])->assertCreated();
 
     $order = Order::sole();
-    $response->assertExactJson([
+    $response->assertExactJson(['data' => [
         'number' => $order->number,
         'status' => $order->status->value,
         'items' => [[
@@ -60,7 +60,7 @@ it('places an order and lowers the stock', function () {
         'total' => 24200,
         'vat_rate' => (int) config('shop.vat_rate'),
         'vat_total' => $order->vat_total,
-    ]);
+    ]]);
     expect($product->fresh()->stock)->toBe(3);
     Mail::assertQueued(OrderPlaced::class, 1);
 });
@@ -212,7 +212,7 @@ it('casts numeric strings for price and quantity and places the order', function
 
     postOrder([['product_id' => (string) $product->id, 'quantity' => '2', 'price' => '12100']])
         ->assertCreated()
-        ->assertJsonPath('total', 24200);
+        ->assertJsonPath('data.total', 24200);
 
     expect($product->fresh()->stock)->toBe(3);
 });
@@ -248,7 +248,7 @@ it('never returns personal data', function () {
     $response = postOrder([apiLine($product)])->assertCreated();
 
     foreach (['customer_name', 'email', 'phone', 'street', 'city', 'zip', 'note'] as $key) {
-        $response->assertJsonMissingPath($key);
+        $response->assertJsonMissingPath($key)->assertJsonMissingPath("data.$key");
     }
     expect($response->getContent())->not->toContain('jana@example.com')->not->toContain('Dlouhá');
 });

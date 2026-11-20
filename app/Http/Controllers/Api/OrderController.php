@@ -59,7 +59,7 @@ class OrderController extends Controller
 
         RateLimiter::hit($limiterKey, 3600);
 
-        return response()->json((new OrderResource($order->load('items')))->resolve(), 201);
+        return (new OrderResource($order->load('items')))->response()->setStatusCode(201);
     }
 
     /**
@@ -82,6 +82,6 @@ class OrderController extends Controller
             ], 409);
         }
 
-        return response()->json((new OrderResource($order))->resolve());
+        return (new OrderResource($order))->response();
     }
 }
