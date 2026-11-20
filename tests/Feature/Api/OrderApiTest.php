@@ -1,11 +1,15 @@
 <?php
 
+use App\Actions\PlaceOrder;
 use App\Cart\Cart;
+use App\Exceptions\OrderAlreadyPlacedException;
 use App\Livewire\CheckoutPage;
 use App\Mail\OrderPlaced;
 use App\Models\Order;
 use App\Models\Product;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 
 use function Pest\Livewire\livewire;
@@ -63,6 +67,28 @@ it('places an order and lowers the stock', function () {
     ]]);
     expect($product->fresh()->stock)->toBe(3);
     Mail::assertQueued(OrderPlaced::class, 1);
+    Mail::assertQueued(OrderPlaced::class, fn ($mail) => $mail->hasTo('jana@example.com'));
+    expect($order->only(['customer_name', 'email', 'phone', 'street', 'city', 'zip', 'note']))->toBe([
+        'customer_name' => 'Jana Nováková',
+        'email' => 'jana@example.com',
+        'phone' => '+420 000 000 000',
+        'street' => 'Dlouhá 12',
+        'city' => 'Praha',
+        'zip' => '11000',
+        'note' => 'Zvonit na zvonek',
+    ]);
+});
+
+it('stores a missing note as null', function () {
+    $product = Product::factory()->create(['stock' => 5]);
+
+    postOrder([apiLine($product)], null, ['note' => null])->assertCreated();
+    expect(Order::sole()->note)->toBeNull();
+    Order::query()->delete();
+
+    $payload = ['cart_token' => (string) Str::uuid(), 'items' => [apiLine($product)], 'customer' => Arr::except(apiCustomer(), 'note')];
+    test()->postJson('/api/orders', $payload)->assertCreated();
+    expect(Order::sole()->note)->toBeNull();
 });
 
 it('returns the same order when the same cart is sent again', function () {
@@ -90,6 +116,36 @@ it('refuses the same token with different items', function () {
         ->assertJsonPath('messages.0', fn (string $m) => str_starts_with($m, 'Tento košík už byl objednán s jiným obsahem.'));
 
     expect(Order::count())->toBe(1)->and($product->fresh()->stock)->toBe(3);
+});
+
+it('matches a replay regardless of line order and refuses a different set of lines', function () {
+    $a = Product::factory()->create(['stock' => 5]);
+    $b = Product::factory()->create(['stock' => 5]);
+    $token = (string) Str::uuid();
+
+    postOrder([apiLine($a, 1), apiLine($b, 2)], $token)->assertCreated();
+
+    postOrder([apiLine($b, 2), apiLine($a, 1)], $token)->assertOk();
+    postOrder([apiLine($a, 1)], $token)->assertStatus(409)->assertJsonPath('code', 'cart_already_ordered');
+    postOrder([apiLine($a, 1), apiLine($b, 3)], $token)->assertStatus(409)->assertJsonPath('code', 'cart_already_ordered');
+
+    expect(Order::count())->toBe(1);
+});
+
+it('treats a parallel request with the same token like a replay', function () {
+    config(['shop.orders_per_hour' => 5]);
+    $product = Product::factory()->create(['stock' => 5]);
+    $first = postOrder([apiLine($product, 2)])->assertCreated();
+    $existing = Order::sole();
+    RateLimiter::clear('place-order:127.0.0.1');
+
+    $this->mock(PlaceOrder::class)->shouldReceive('handle')->twice()->andThrow(new OrderAlreadyPlacedException($existing));
+
+    postOrder([apiLine($product, 2)])->assertOk()->assertExactJson($first->json());
+    postOrder([apiLine($product, 3)])->assertStatus(409)->assertJsonPath('code', 'cart_already_ordered');
+
+    Mail::assertQueued(OrderPlaced::class, 1);
+    expect(RateLimiter::attempts('place-order:127.0.0.1'))->toBe(0)->and(Order::count())->toBe(1);
 });
 
 it('reports a changed price and returns the corrected cart', function () {
@@ -251,6 +307,13 @@ it('never returns personal data', function () {
         $response->assertJsonMissingPath($key)->assertJsonMissingPath("data.$key");
     }
     expect($response->getContent())->not->toContain('jana@example.com')->not->toContain('Dlouhá');
+
+    $replay = postOrder([apiLine($product)], Order::sole()->cart_token)->assertOk();
+
+    foreach (['customer_name', 'email', 'phone', 'street', 'city', 'zip', 'note'] as $key) {
+        $replay->assertJsonMissingPath($key)->assertJsonMissingPath("data.$key");
+    }
+    expect($replay->getContent())->not->toContain('jana@example.com')->not->toContain('Dlouhá');
 });
 
 it('does not start a session', function () {
