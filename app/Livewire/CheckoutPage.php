@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Actions\PlaceOrder;
 use App\Cart\Cart;
 use App\Data\CheckoutData;
+use App\Data\CheckoutRules;
 use App\Exceptions\CartChangedException;
 use App\Exceptions\EmptyCartException;
 use App\Exceptions\OrderAlreadyPlacedException;
@@ -21,26 +22,26 @@ use Livewire\Component;
 #[Title('Pokladna')]
 class CheckoutPage extends Component
 {
-    // Message keys carry the field name: Livewire merges them into one list for the whole component.
-    #[Validate('required|string|max:255', message: ['name.required' => 'Vyplňte jméno a příjmení.'], as: 'jméno a příjmení')]
+    // Bare #[Validate] keeps realtime validation on every property update; the rules come from rules().
+    #[Validate]
     public string $name = '';
 
-    #[Validate('required|email|max:255', message: ['email.required' => 'Vyplňte e-mail.', 'email.email' => 'Zadejte platný e-mail.'], as: 'e-mail')]
+    #[Validate]
     public string $email = '';
 
-    #[Validate('required|string|max:30', message: ['phone.required' => 'Vyplňte telefon.'], as: 'telefon')]
+    #[Validate]
     public string $phone = '';
 
-    #[Validate('required|string|max:255', message: ['street.required' => 'Vyplňte ulici a číslo domu.'], as: 'ulice a číslo domu')]
+    #[Validate]
     public string $street = '';
 
-    #[Validate('required|string|max:255', message: ['city.required' => 'Vyplňte město.'], as: 'město')]
+    #[Validate]
     public string $city = '';
 
-    #[Validate(['required', 'regex:/^\d{3}\s?\d{2}$/'], message: ['zip.required' => 'Vyplňte PSČ.', 'zip.regex' => 'PSČ má pět číslic, např. 110 00.'], as: 'PSČ')]
+    #[Validate]
     public string $zip = '';
 
-    #[Validate('nullable|string|max:2000', message: ['note.max' => 'Poznámka může mít nejvýš 2000 znaků.'], as: 'poznámka')]
+    #[Validate]
     public string $note = '';
 
     /** @var list<string> */
@@ -49,6 +50,30 @@ class CheckoutPage extends Component
     /** The cart as last shown in the summary; set on every render. */
     #[Locked]
     public string $cartFingerprint = '';
+
+    /**
+     * @return array<string, list<string>|string>
+     */
+    protected function rules(): array
+    {
+        return CheckoutRules::rules();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function messages(): array
+    {
+        return CheckoutRules::messages();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function validationAttributes(): array
+    {
+        return CheckoutRules::attributes();
+    }
 
     public function mount(Cart $cart): mixed
     {
