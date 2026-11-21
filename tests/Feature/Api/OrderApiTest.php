@@ -301,11 +301,14 @@ it('stops after the hourly limit shared with the web checkout', function () {
         ->assertRedirect();
     expect(Order::count())->toBe(1);
 
-    postOrder([apiLine($product)])
+    $retryAfter = postOrder([apiLine($product)])
         ->assertStatus(429)
         ->assertJsonPath('code', 'too_many_orders')
         ->assertJsonPath('messages', ['Z vaší adresy přišlo v poslední hodině příliš mnoho objednávek. Zkuste to prosím později.'])
-        ->assertHeader('Retry-After');
+        ->headers->get('Retry-After');
+
+    expect($retryAfter)->toMatch('/^\d+$/')
+        ->and((int) $retryAfter)->toBeGreaterThanOrEqual(1)->toBeLessThanOrEqual(3600);
 
     expect(Order::count())->toBe(1)->and($product->fresh()->stock)->toBe(9);
 });
