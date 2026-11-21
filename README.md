@@ -117,7 +117,7 @@ curl -X POST http://localhost:8088/api/orders \
 |---|---|
 | `201` | order created, body in the `data` envelope |
 | `200` | the same token was already ordered – the existing order is returned |
-| `409` | `{"code": "cart_changed", "messages": [...], "items": [...]}` (price, availability or stock changed) or `{"code": "cart_already_ordered", ...}` |
+| `409` | `{"code": "cart_changed", "messages": [...], "items": [...]}` (price, availability or stock changed) or `{"code": "cart_already_ordered", ...}` (the token already placed an order with different items; the message names that order and tells the customer to check the kept cart and send it again, which creates a new order) |
 | `422` | validation errors |
 | `429` | too many orders from this IP; `Retry-After` header |
 

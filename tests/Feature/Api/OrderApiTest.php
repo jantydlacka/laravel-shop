@@ -108,14 +108,26 @@ it('refuses the same token with different items', function () {
     $product = Product::factory()->create(['stock' => 5]);
     $token = (string) Str::uuid();
 
-    postOrder([apiLine($product, 2)], $token)->assertCreated();
+    $number = postOrder([apiLine($product, 2)], $token)->assertCreated()->json('data.number');
 
     postOrder([apiLine($product, 3)], $token)
         ->assertStatus(409)
         ->assertJsonPath('code', 'cart_already_ordered')
-        ->assertJsonPath('messages.0', fn (string $m) => str_starts_with($m, 'Tento košík už byl objednán s jiným obsahem.'));
+        ->assertJsonPath('messages', ["Z tohoto košíku už byla odeslána objednávka č. {$number}. Košík jsme ponechali – zkontrolujte ho a odešlete objednávku znovu, vznikne nová."]);
 
     expect(Order::count())->toBe(1)->and($product->fresh()->stock)->toBe(3);
+});
+
+it('refuses a different cart without an order number when the existing order has none yet', function () {
+    $product = Product::factory()->create(['stock' => 5]);
+    $token = (string) Str::uuid();
+    $order = Order::factory()->withItem($product, 2)->create(['cart_token' => $token]);
+    Order::query()->whereKey($order->id)->update(['number' => null]);
+
+    postOrder([apiLine($product, 3)], $token)
+        ->assertStatus(409)
+        ->assertJsonPath('code', 'cart_already_ordered')
+        ->assertJsonPath('messages', ['Z tohoto košíku už byla odeslána objednávka. Košík jsme ponechali – zkontrolujte ho a odešlete objednávku znovu, vznikne nová.']);
 });
 
 it('matches a replay regardless of line order and refuses a different set of lines', function () {

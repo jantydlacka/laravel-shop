@@ -76,9 +76,11 @@ class OrderController extends Controller
         ksort($sent);
 
         if ($placed !== $sent) {
+            $placedOrder = $order->number !== null ? "objednávka č. {$order->number}" : 'objednávka';
+
             return response()->json([
                 'code' => 'cart_already_ordered',
-                'messages' => ['Tento košík už byl objednán s jiným obsahem. Obnovte stránku a začněte nový nákup.'],
+                'messages' => ["Z tohoto košíku už byla odeslána {$placedOrder}. Košík jsme ponechali – zkontrolujte ho a odešlete objednávku znovu, vznikne nová."],
             ], 409);
         }
 
