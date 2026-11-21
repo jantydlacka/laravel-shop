@@ -85,3 +85,9 @@ it('rejects an empty or malformed cart', function () {
     $this->postJson('/api/cart/check', [])->assertStatus(422)->assertJsonValidationErrors(['items']);
     checkCart([['product_id' => 1, 'quantity' => 1]])->assertStatus(422)->assertJsonValidationErrors(['items.0.price']);
 });
+
+it('rejects more than 100 lines', function () {
+    $lines = array_map(fn (int $id) => ['product_id' => $id, 'quantity' => 1, 'price' => 100], range(1, 101));
+
+    checkCart($lines)->assertStatus(422)->assertJsonValidationErrors(['items']);
+});

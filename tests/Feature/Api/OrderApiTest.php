@@ -336,3 +336,10 @@ it('does not start a session', function () {
     expect($response->headers->getCookies())->toBe([])
         ->and($response->headers->has('Set-Cookie'))->toBeFalse();
 });
+
+it('rejects an order with more than 100 lines', function () {
+    $lines = array_map(fn (int $id) => ['product_id' => $id, 'quantity' => 1, 'price' => 100], range(1, 101));
+
+    postOrder($lines)->assertStatus(422)->assertJsonValidationErrors(['items']);
+    expect(Order::count())->toBe(0);
+});
