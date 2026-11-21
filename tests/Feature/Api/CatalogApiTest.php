@@ -97,3 +97,18 @@ it('hides unavailable products from listings', function () {
         expect($slugs)->toBe(['shown']);
     }
 });
+
+it('rejects a category sent as an array', function () {
+    $this->getJson('/api/products?category[]=x')
+        ->assertStatus(422)
+        ->assertJsonValidationErrors('category');
+});
+
+it('treats an empty category like no category', function () {
+    $category = Category::factory()->create(['slug' => 'tea']);
+    Product::factory()->for($category)->create(['slug' => 'assam']);
+
+    $this->getJson('/api/products?category=')
+        ->assertOk()
+        ->assertJsonPath('data.0.slug', 'assam');
+});

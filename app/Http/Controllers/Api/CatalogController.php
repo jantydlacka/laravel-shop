@@ -21,6 +21,8 @@ class CatalogController extends Controller
 
     public function products(Request $request): AnonymousResourceCollection
     {
+        $request->validate(['category' => ['nullable', 'string']]);
+
         $slug = $request->query('category');
 
         if (is_string($slug)) {
