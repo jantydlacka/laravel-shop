@@ -84,10 +84,10 @@ Order numbers are readable (`2026000123` = year of the order + its id, which kee
 
 ## JSON API
 
-A JSON API under `/api` lets a separate client (a React storefront) browse the catalogue and place
+A JSON API under `/api` lets a separate client ([shop-react](https://github.com/jantydlacka/shop-react), a React + TypeScript storefront) browse the catalogue and place
 orders. It uses the same actions as the web checkout, so stock, prices, the quantity limit and the
 hourly order limit behave identically. Prices are integers in hellers; the client does the formatting.
-Error messages are in Czech. A React client will be linked here once it is published.
+Error messages are in Czech.
 
 | Method | Path | Purpose |
 |---|---|---|
