@@ -47,6 +47,17 @@ class DemoCatalogSeeder extends Seeder
         ],
     ];
 
+    /**
+     * Added after the first catalogue, so the products above keep their ids.
+     *
+     * @var list<array{string, string, string, int, int, bool, string}>
+     */
+    private const ADDED = [
+        ['kava', 'brazilie-santos', 'Brazílie Santos 250 g', 25900, 14, true, 'Jednodruhová arabika s oříškovou vůní a nízkou kyselostí.'],
+        ['caj', 'darjeeling', 'Darjeeling 100 g', 17900, 0, true, 'Černý horský Darjeeling s muškátovou vůní.'],
+        ['prislusenstvi', 'barista-tamper', 'Barista tamper 58 mm', 34900, 10, true, 'Nerezový tamper s dřevěnou rukojetí pro sítka o průměru 58 mm.'],
+    ];
+
     public function run(): void
     {
         foreach (self::CATALOG as $categorySlug => $categoryData) {
@@ -55,27 +66,37 @@ class DemoCatalogSeeder extends Seeder
                 ['name' => $categoryData['name'], 'position' => $categoryData['position']],
             );
 
-            foreach ($categoryData['products'] as [$slug, $name, $price, $stock, $available, $description]) {
-                // Existing products keep their stock (orders took from it) and admin edits.
-                if (Product::query()->where('slug', $slug)->exists()) {
-                    continue;
-                }
-
-                // On the public disk like uploaded images, so the admin form keeps them on save.
-                $imagePath = "products/{$slug}.svg";
-                Storage::disk('public')->put($imagePath, (string) file_get_contents(__DIR__."/images/{$slug}.svg"));
-
-                Product::query()->create([
-                    'category_id' => $category->id,
-                    'name' => $name,
-                    'slug' => $slug,
-                    'description' => $description,
-                    'price' => $price,
-                    'stock' => $stock,
-                    'is_available' => $available,
-                    'image_path' => $imagePath,
-                ]);
+            foreach ($categoryData['products'] as $product) {
+                $this->seedProduct($category, ...$product);
             }
         }
+
+        foreach (self::ADDED as [$categorySlug, $slug, $name, $price, $stock, $available, $description]) {
+            $category = Category::query()->where('slug', $categorySlug)->firstOrFail();
+            $this->seedProduct($category, $slug, $name, $price, $stock, $available, $description);
+        }
+    }
+
+    private function seedProduct(Category $category, string $slug, string $name, int $price, int $stock, bool $available, string $description): void
+    {
+        // Existing products keep their stock (orders took from it) and admin edits.
+        if (Product::query()->where('slug', $slug)->exists()) {
+            return;
+        }
+
+        // On the public disk like uploaded images, so the admin form keeps them on save.
+        $imagePath = "products/{$slug}.svg";
+        Storage::disk('public')->put($imagePath, (string) file_get_contents(__DIR__."/images/{$slug}.svg"));
+
+        Product::query()->create([
+            'category_id' => $category->id,
+            'name' => $name,
+            'slug' => $slug,
+            'description' => $description,
+            'price' => $price,
+            'stock' => $stock,
+            'is_available' => $available,
+            'image_path' => $imagePath,
+        ]);
     }
 }

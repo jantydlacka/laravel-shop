@@ -26,7 +26,7 @@ The storefront and the admin are in Czech; code, comments and docs are in Englis
 - **Confirmation e-mail** – a queued Mailable, dispatched only after the order transaction commits.
 - **Admin** (Filament, `/admin`) – categories and products (CRUD), orders (list with status filter, detail with VAT breakdown, status changes as actions – orders are never edited freely).
 - **JSON API** (`/api`) – catalogue, cart check and order placement for a separate client, sharing the domain logic with the web checkout (see [JSON API](#json-api)).
-- **Demo data** – 3 categories, 12 products with bundled images and 6 orders that together cover every state, all placed through the real checkout so stock adds up.
+- **Demo data** – 3 categories, 15 products with bundled images and 6 orders that together cover every state, all placed through the real checkout so stock adds up.
 
 ## Domain decisions
 
