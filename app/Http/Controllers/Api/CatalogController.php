@@ -31,8 +31,10 @@ class CatalogController extends Controller
         $query->available()->with('category');
 
         if (($search = $request->search()) !== null) {
-            $like = '%'.addcslashes($search, '\\%_').'%';
-            $query->where(fn (Builder $match) => $match->where('name', 'like', $like)->orWhere('description', 'like', $like));
+            $like = '%'.strtr($search, ['!' => '!!', '%' => '!%', '_' => '!_']).'%';
+            $query->where(fn (Builder $match) => $match
+                ->whereRaw("name like ? escape '!'", [$like])
+                ->orWhereRaw("description like ? escape '!'", [$like]));
         }
 
         if ($request->onlyInStock()) {
@@ -46,7 +48,7 @@ class CatalogController extends Controller
             default => $query->orderByDesc('created_at')->orderByDesc('id'),
         };
 
-        return ProductResource::collection($query->paginate(12)->withQueryString());
+        return ProductResource::collection($query->paginate(12)->appends($request->appendedQuery()));
     }
 
     public function product(Product $product): ProductResource

@@ -179,6 +179,8 @@ it('rejects invalid parameters with 422', function (string $query, string $key) 
 })->with([
     'unknown sort' => ['sort=xyz', 'sort'],
     'page zero' => ['page=0', 'page'],
+    'page above the limit' => ['page=10001', 'page'],
+    'page beyond int range' => ['page=9223372036854775807', 'page'],
     'page not a number' => ['page=abc', 'page'],
     'in_stock not boolean' => ['in_stock=abc', 'in_stock'],
     'q as array' => ['q[]=x', 'q'],
@@ -193,6 +195,26 @@ it('accepts q of 100 characters, also non-ASCII, and trims before counting', fun
     'czech' => [str_repeat('č', 100)],
     'padded' => ['  '.str_repeat('a', 100).'  '],
 ]);
+
+it('accepts the highest page and returns it empty', function () {
+    makeProduct('one');
+
+    $this->getJson('/api/products?page=10000')
+        ->assertOk()
+        ->assertJsonPath('data', [])
+        ->assertJsonPath('meta.current_page', 10000);
+});
+
+it('keeps unknown parameters out of the pagination links', function () {
+    foreach (range(1, 13) as $i) {
+        makeProduct("p-$i");
+    }
+
+    $response = $this->getJson('/api/products?foo=bar&q=p&sort=name&in_stock=1')->assertOk();
+
+    expect($response->json('links.next'))->toContain('q=p', 'sort=name', 'in_stock=1')->not->toContain('foo')
+        ->and($response->json('links.first'))->not->toContain('foo');
+});
 
 it('accepts in_stock values', function (string $value, int $status) {
     makeProduct('in', ['stock' => 3]);

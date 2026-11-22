@@ -105,7 +105,7 @@ Error messages are in Czech.
 | `sort` | `newest`, `name`, `price_asc`, `price_desc` (ties are broken by `id`) | `newest` |
 | `in_stock` | `1` or `0`; only `stock > 0` with `1` (`true` and `false` are rejected) | `0` |
 | `category` | category slug (404 when unknown) | all |
-| `page` | integer from 1 | `1` |
+| `page` | integer 1–10 000 | `1` |
 
 Invalid values return 422 (`message` and `errors`). The response is `data`, `links` and `meta`
 (`current_page`, `last_page`, `per_page`, `total`, ...); a page past the last one has an empty `data`.

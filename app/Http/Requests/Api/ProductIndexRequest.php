@@ -7,6 +7,8 @@ use Illuminate\Validation\Rule;
 
 class ProductIndexRequest extends FormRequest
 {
+    public const MAX_PAGE = 10000;
+
     public const SORTS = ['newest', 'name', 'price_asc', 'price_desc'];
 
     protected function prepareForValidation(): void
@@ -28,7 +30,7 @@ class ProductIndexRequest extends FormRequest
             'q' => ['nullable', 'string', 'max:100'],
             'sort' => ['nullable', Rule::in(self::SORTS)],
             'in_stock' => ['nullable', 'boolean'],
-            'page' => ['nullable', 'integer', 'min:1'],
+            'page' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_PAGE],
         ];
     }
 
@@ -47,5 +49,20 @@ class ProductIndexRequest extends FormRequest
     public function onlyInStock(): bool
     {
         return $this->boolean('in_stock');
+    }
+
+    /**
+     * @return array<string, string|int>
+     */
+    public function appendedQuery(): array
+    {
+        $category = $this->validated('category');
+
+        return array_filter([
+            'category' => is_string($category) && $category !== '' ? $category : null,
+            'q' => $this->search(),
+            'sort' => $this->sort() !== 'newest' ? $this->sort() : null,
+            'in_stock' => $this->onlyInStock() ? 1 : null,
+        ], fn ($value) => $value !== null);
     }
 }
