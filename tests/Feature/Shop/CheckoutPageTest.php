@@ -274,3 +274,9 @@ it('rejects a confirmation url with a changed order number', function () {
 
     $this->get(str_replace($mine->number, $other->number, $url))->assertForbidden();
 });
+
+it('validates a field as soon as it changes', function () {
+    app(Cart::class)->add(Product::factory()->create(['stock' => 5]), 1);
+
+    livewire(CheckoutPage::class)->set('email', 'x')->assertHasErrors('email');
+});

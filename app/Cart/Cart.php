@@ -20,6 +20,18 @@ class Cart
 
     public function __construct(private readonly Session $session) {}
 
+    /**
+     * @param  array<int, array{quantity: int, price: int}>  $items  same shape as items()
+     */
+    public static function fromItems(Session $session, array $items, string $token): self
+    {
+        $cart = new self($session);
+        $cart->store($items);
+        $session->put(self::TOKEN_KEY, $token);
+
+        return $cart;
+    }
+
     public function add(Product $product, int $quantity): void
     {
         $items = $this->items();

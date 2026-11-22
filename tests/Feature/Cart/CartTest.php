@@ -1,9 +1,15 @@
 <?php
 
+use App\Actions\PlaceOrder;
 use App\Cart\Cart;
 use App\Cart\CartLine;
+use App\Data\CheckoutData;
+use App\Exceptions\CartChangedException;
 use App\Models\Product;
 use App\Support\Money;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
+use Illuminate\Support\Facades\Mail;
 
 covers(Cart::class, CartLine::class);
 
@@ -248,4 +254,28 @@ it('fingerprints the content regardless of the order products were added in', fu
     cart()->update($a->id, 3);
 
     expect(cart()->fingerprint())->not->toBe($fingerprint);
+});
+
+it('builds a cart from raw items and keeps the price the customer saw', function () {
+    $product = Product::factory()->create(['price' => 10000, 'stock' => 10]);
+    $items = [$product->id => ['quantity' => 2, 'price' => 9000]];
+
+    $fromItems = Cart::fromItems(new Store('x', new ArraySessionHandler(10)), $items, 'tok-1');
+
+    $session = new Store('y', new ArraySessionHandler(10));
+    $session->put('cart', $items);
+    $reference = new Cart($session);
+
+    expect($fromItems->items())->toBe($items)
+        ->and($fromItems->token())->toBe('tok-1')
+        ->and($fromItems->fingerprint())->toBe($reference->fingerprint());
+});
+
+it('lets PlaceOrder refuse a cart built from items with an outdated price', function () {
+    Mail::fake();
+    $product = Product::factory()->create(['price' => 10000, 'stock' => 10]);
+    $cart = Cart::fromItems(new Store('x', new ArraySessionHandler(10)), [$product->id => ['quantity' => 1, 'price' => 9000]], 'tok-1');
+    $data = new CheckoutData('Jana Nováková', 'jana@example.com', '+420 000 000 000', 'Dlouhá 12', 'Praha', '110 00', null);
+
+    expect(fn () => app(PlaceOrder::class)->handle($cart, $data))->toThrow(CartChangedException::class);
 });
