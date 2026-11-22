@@ -24,6 +24,21 @@ it('seeds a browsable demo catalog and the admin user', function () {
         ->and(User::where('email', 'admin@example.com')->exists())->toBeTrue();
 });
 
+it('seeds 15 products, 14 of them available', function () {
+    $this->seed(DemoCatalogSeeder::class);
+
+    expect(Product::count())->toBe(15)
+        ->and(Product::where('is_available', true)->count())->toBe(14)
+        ->and(Product::where('stock', 0)->where('is_available', true)->count())->toBeGreaterThanOrEqual(2);
+});
+
+it('adds the three newer products after the first twelve', function () {
+    $this->seed(DemoCatalogSeeder::class);
+
+    expect(Product::orderBy('id')->pluck('slug')->slice(12)->values()->all())
+        ->toBe(['brazilie-santos', 'darjeeling', 'barista-tamper']);
+});
+
 it('can be run twice', function () {
     $this->seed();
     $counts = [Category::count(), Product::count(), User::count(), Order::count()];
