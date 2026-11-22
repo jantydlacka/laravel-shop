@@ -216,6 +216,18 @@ it('keeps unknown parameters out of the pagination links', function () {
         ->and($response->json('links.first'))->not->toContain('foo');
 });
 
+it('keeps the category in the pagination links', function () {
+    $tea = Category::factory()->create(['slug' => 'tea']);
+    foreach (range(1, 13) as $i) {
+        makeProduct("t-$i", ['category_id' => $tea->id]);
+    }
+
+    $response = $this->getJson('/api/products?category=tea&q=t&sort=name&in_stock=1')->assertOk();
+
+    expect($response->json('links.next'))->toContain('category=tea', 'q=t', 'sort=name', 'in_stock=1')
+        ->and($response->json('links.first'))->toContain('category=tea');
+});
+
 it('accepts in_stock values', function (string $value, int $status) {
     makeProduct('in', ['stock' => 3]);
     makeProduct('out', ['stock' => 0]);
