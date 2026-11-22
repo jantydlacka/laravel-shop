@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ProductIndexRequest;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Category;
 use App\Models\Product;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class CatalogController extends Controller
@@ -19,20 +20,33 @@ class CatalogController extends Controller
         );
     }
 
-    public function products(Request $request): AnonymousResourceCollection
+    public function products(ProductIndexRequest $request): AnonymousResourceCollection
     {
-        $request->validate(['category' => ['nullable', 'string']]);
-
         $slug = $request->query('category');
 
-        if (is_string($slug)) {
-            $category = Category::query()->where('slug', $slug)->firstOrFail();
-            $products = $category->products()->available()->with('category')->orderBy('name')->get();
-        } else {
-            $products = Product::available()->with('category')->latest()->take(12)->get();
+        $query = is_string($slug) && $slug !== ''
+            ? Category::query()->where('slug', $slug)->firstOrFail()->products()->getQuery()
+            : Product::query();
+
+        $query->available()->with('category');
+
+        if (($search = $request->search()) !== null) {
+            $like = '%'.addcslashes($search, '\\%_').'%';
+            $query->where(fn (Builder $match) => $match->where('name', 'like', $like)->orWhere('description', 'like', $like));
         }
 
-        return ProductResource::collection($products);
+        if ($request->onlyInStock()) {
+            $query->where('stock', '>', 0);
+        }
+
+        match ($request->sort()) {
+            'name' => $query->orderBy('name')->orderBy('id'),
+            'price_asc' => $query->orderBy('price')->orderBy('id'),
+            'price_desc' => $query->orderByDesc('price')->orderByDesc('id'),
+            default => $query->orderByDesc('created_at')->orderByDesc('id'),
+        };
+
+        return ProductResource::collection($query->paginate(12)->withQueryString());
     }
 
     public function product(Product $product): ProductResource
