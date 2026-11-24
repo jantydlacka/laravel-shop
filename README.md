@@ -89,6 +89,9 @@ orders. It uses the same actions as the web checkout, so stock, prices, the quan
 hourly order limit behave identically. Prices are integers in hellers; the client does the formatting.
 Error messages are in Czech.
 
+[node-shop](https://github.com/jantydlacka/node-shop) implements the same API in Node.js/TypeScript
+and compares its answers with this one.
+
 | Method | Path | Purpose |
 |---|---|---|
 | `GET` | `/api/categories` | categories |
